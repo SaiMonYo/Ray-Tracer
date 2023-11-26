@@ -1,0 +1,7 @@
+/.vscode
+/main.exe
+*.exe
+*.qoi
+images/result.png
+objs/
+test.py
