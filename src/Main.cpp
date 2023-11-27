@@ -70,6 +70,8 @@ void wd40(){
 
     Renderer ren = Renderer(&qoi, DEFAULT_WIDTH, DEFAULT_HEIGHT, world);
     ren.render();
+    std::cout << lube->tri_count << std::endl;
+    std::cout << AABBIntersectionCount << std::endl;
 
     output.close();
 }

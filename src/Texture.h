@@ -30,7 +30,6 @@ struct ImageTexture : public Texture{
         width = qoi.width;
         height = qoi.height;
         qoi.read_all(pixels);
-        std::cout << pixels.size() << std::endl;
         input.close();
     }
     Vector3 get_colour(float u, float v){

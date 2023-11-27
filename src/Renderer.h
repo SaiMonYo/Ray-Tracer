@@ -72,6 +72,7 @@ struct Renderer{
     void render(){
         Camera cam = Camera(width, height);
 
+        std::cout << "Rendering..." << std::endl;
         for (int z = 0; z < height; z++){
             for (int x = 0; x < width; x++){
                 Ray r = cam.castRay(x,z);
@@ -79,9 +80,10 @@ struct Renderer{
                 out->write_pixel(tonemap(lin_rgb)*255);
             }
             if (z % 20 == 0){
-                std::cout << (100.0*z)/(height) << " %complete" << std::endl;
+                std::cout << (100.0*z)/(height) << "% complete" << std::endl;
             }
         }
+        std::cout << "100% complete" << std::endl;
     }
 
     Vector3 tonemap(Vector3 lin_rgb){

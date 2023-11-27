@@ -3,169 +3,173 @@
 #include "AABB.h"
 #include <iostream>
 #include <vector>
+#include <stack>
 #include <set>
 
-class SpaceTreeNode{
-    public:
-        SpaceTreeNode(){
-        }
+struct SpaceTreeNode{
+    Vector3 box[2];
+    Vector3 centre;
+    Vector3 extents;
+    int index = -1;
+    bool is_leaf = false;
+    bool is_dead = false;
+    std::vector<std::vector<int>> faces;
 
-        SpaceTreeNode(Vector3 min_, Vector3 max_){
-            center = (max_ + min_) * 0.5f;
-            extents = max_ - center;
-            box[0] = min_;
-            box[1] = max_;
-        }
+    SpaceTreeNode(){
+    }
 
-        ~SpaceTreeNode(){
-            children.clear();
-            faces.clear();
-        }
+    SpaceTreeNode(Vector3 min_, Vector3 max_, int ind){
+        centre = (max_ + min_) * 0.5f;
+        extents = max_ - centre;
+        box[0] = min_;
+        box[1] = max_;
+        index = ind;
+    }
 
-        void build(int depth){
-            if (depth == 0){
-                return;
-            }
-            Vector3 v0 = box[0];
-            Vector3 v1 = box[1];
-            // TOP/BOTTOM LEFT/RIGHT FRONT/BACK
-            SpaceTreeNode TRF = SpaceTreeNode(center, v1);
-            TRF.build(depth - 1);
-            SpaceTreeNode TLF = SpaceTreeNode(Vector3(v0.x, center.y, center.z), Vector3(center.x, v1.y, v1.z));
-            TLF.build(depth - 1);
-            SpaceTreeNode BLF = SpaceTreeNode(Vector3(v0.x, v0.y, center.z), Vector3(center.x, center.y, v1.z));
-            BLF.build(depth - 1);
-            SpaceTreeNode BRF = SpaceTreeNode(Vector3(center.x, v0.y, center.z), Vector3(v1.x, center.y, v1.z));
-            BRF.build(depth - 1);
-
-            SpaceTreeNode BRB = SpaceTreeNode(Vector3(center.x, v0.y, v0.z), Vector3(v1.x, center.y, center.z));
-            BRB.build(depth - 1);
-            SpaceTreeNode BLB = SpaceTreeNode(v0, center);
-            BLB.build(depth - 1);
-            SpaceTreeNode TLB = SpaceTreeNode(Vector3(v0.x, center.y, v0.z), Vector3(center.x, v1.y, center.z));
-            TLB.build(depth - 1);
-            SpaceTreeNode TRB = SpaceTreeNode(Vector3(center.x, center.y, v0.z), Vector3(v1.x, v1.y, center.z));
-            TRB.build(depth - 1);
-
-            children.push_back(TRF);
-            children.push_back(TLF);
-            children.push_back(BLF);
-            children.push_back(BRF);
-            children.push_back(BRB);
-            children.push_back(BLB);
-            children.push_back(TLB);
-            children.push_back(TRB);
-        }
-
-        bool insert(std::vector<int>& face, Vector3 v0, Vector3 v1, Vector3 v2, uint8_t depth){
-            if (depth <= 1){
-                // within the insertion box
-                if (AABBIntersection(center, extents, v0, v1, v2)){
-                    return true;
-                }
-                return false;
-            }
-            // within in the current box
-            if (AABBIntersection(center, extents, v0, v1, v2)){
-                for (SpaceTreeNode& child: children){
-                    if (child.insert(face, v0, v1, v2, depth -1)){
-                        child.faces.push_back(face);
-                    }
-                }
-            }
-            return false;
-        }
-
-        bool intersection(Ray ray, std::vector<std::vector<int>>& array){
-            bool hit = false;
-            if (AABBIntersection(box[0], box[1], ray)){
-                // at bottom if no children
-                if (children.size() == 0){
-                    for (auto& face: faces){
-                        array.push_back(face);
-                    }
-                    return true;
-                }
-                // check children
-                for (SpaceTreeNode& node: children){
-                    hit = node.intersection(ray, array) || hit;
-                }
-            }
-            return hit;
-        }
-
-        bool cull(){
-            std::vector<SpaceTreeNode> tokeep;
-            for (SpaceTreeNode& node: children){
-                if (!node.cull()){
-                    tokeep.push_back(node);
-                }
-            }
-            children.clear();
-            children = tokeep;
-            return (children.size() == 0 && faces.size() == 0);
-        }
-
-    public:
-        Vector3 box[2];
-        Vector3 center;
-        Vector3 extents;
-        std::vector<SpaceTreeNode> children;
-        std::vector<std::vector<int>> faces;
+    ~SpaceTreeNode(){
+        faces.clear();
+    }
 };
 
-class Octree{
-    public:
-        Octree(){
-        }
+struct Octree{
+    uint8_t depth;
+    SpaceTreeNode root;
+    std::vector<Vector3> vertices;
+    std::vector<SpaceTreeNode> nodes;
 
-        Octree(Vector3 boundingBox_[2], std::vector<std::vector<int>>& faces_, std::vector<Vector3>& vertices_, uint8_t depth_){
-            // add the meshes bounding box to the roots 
-            root = SpaceTreeNode(boundingBox_[0], boundingBox_[1]);
-            depth = depth_;
-            vertices = vertices_;
-            root.build(depth);
-            for (std::vector<int> face: faces_){
-                // inserting each face into the tree
-                for (SpaceTreeNode& child: root.children){
-                     if (child.insert(face, vertices[face[0] - 1], vertices[face[3] - 1], vertices[face[6] - 1], depth)){
-                        child.faces.push_back(face);
+    Octree(){
+    }
+
+    Octree(Vector3 boundingBox_[2], std::vector<std::vector<int>>& faces_, std::vector<Vector3>& vertices_, uint8_t depth_){
+        // add the meshes bounding box to the roots 
+        root = SpaceTreeNode(boundingBox_[0], boundingBox_[1], -1);
+        depth = depth_;
+        vertices = vertices_;
+        build();
+        insert(faces_);
+    }
+
+    ~Octree(){
+        vertices.clear();
+        nodes.clear();
+    }
+
+    void build(){
+        uint32_t size = 8 * (pow(8, depth) - 1) / 7;
+        nodes.resize(size);
+        std::stack<SpaceTreeNode> stack;
+        stack.push(root);
+
+        while (!stack.empty()){
+            SpaceTreeNode node = stack.top();
+            stack.pop();
+            int i = node.index;
+            Vector3 v0 = node.box[0];
+            Vector3 v1 = node.box[1];
+            Vector3 centre = node.centre;
+
+            uint32_t base_index = (i+1) * 8;
+            SpaceTreeNode TRF = SpaceTreeNode(centre, v1, base_index);
+            SpaceTreeNode TLF = SpaceTreeNode(Vector3(v0.x, centre.y, centre.z), Vector3(centre.x, v1.y, v1.z), base_index + 1);
+            SpaceTreeNode BLF = SpaceTreeNode(Vector3(v0.x, v0.y, centre.z), Vector3(centre.x, centre.y, v1.z), base_index + 2);
+            SpaceTreeNode BRF = SpaceTreeNode(Vector3(centre.x, v0.y, centre.z), Vector3(v1.x, centre.y, v1.z), base_index + 3);
+
+            SpaceTreeNode BRB = SpaceTreeNode(Vector3(centre.x, v0.y, v0.z), Vector3(v1.x, centre.y, centre.z), base_index + 4);
+            SpaceTreeNode BLB = SpaceTreeNode(v0, centre, base_index + 5);
+            SpaceTreeNode TLB = SpaceTreeNode(Vector3(v0.x, centre.y, v0.z), Vector3(centre.x, v1.y, centre.z), base_index + 6);
+            SpaceTreeNode TRB = SpaceTreeNode(Vector3(centre.x, centre.y, v0.z), Vector3(v1.x, v1.y, centre.z), base_index + 7);
+
+
+            if ((base_index+1) * 8 < size){
+                stack.push(TRF);
+                stack.push(TLF);
+                stack.push(BLF);
+                stack.push(BRF);
+                stack.push(BRB);
+                stack.push(BLB);
+                stack.push(TLB);
+                stack.push(TRB);
+            }
+            else{
+                TRF.is_leaf = true;
+                TLF.is_leaf = true;
+                BLF.is_leaf = true;
+                BRF.is_leaf = true;
+                BRB.is_leaf = true;
+                BLB.is_leaf = true;
+                TLB.is_leaf = true;
+                TRB.is_leaf = true;
+            }
+            nodes[base_index    ] = TRF;
+            nodes[base_index + 1] = TLF;
+            nodes[base_index + 2] = BLF;
+            nodes[base_index + 3] = BRF;
+            nodes[base_index + 4] = BRB;
+            nodes[base_index + 5] = BLB;
+            nodes[base_index + 6] = TLB;
+            nodes[base_index + 7] = TRB;
+        }
+    }
+
+    void insert(std::vector<std::vector<int>>& faces_){
+        for (std::vector<int> face: faces_){
+            std::stack<SpaceTreeNode> stack;
+            stack.push(root);
+            while (!stack.empty()){
+                SpaceTreeNode node = stack.top();
+                stack.pop();
+                int i = node.index;
+                AABBIntersectionCount++;
+                if (AABBIntersection(node.centre, node.extents, vertices[face[0] - 1], vertices[face[3] - 1], vertices[face[6] - 1])){
+                    if (nodes[i].is_leaf){
+                        nodes[i].faces.push_back(face);
+                    }
+                    else{
+                        for (int j = 0; j < 8; j++){
+                            stack.push(nodes[(i+1)*8 + j]);
+                        }
                     }
                 }
             }
-            root.cull();
+        }
+    }
+
+    void cull(){
+
+    }
+    
+
+    std::vector<std::vector<int>> intersection(Ray ray){        
+        // find the faces we need to test
+        std::vector<std::vector<int>> tests = {};
+        
+        std::stack<SpaceTreeNode> stack;
+        stack.push(root);
+        while (!stack.empty()){
+            SpaceTreeNode node = stack.top();
+            stack.pop();
+            int i = node.index;
+            if (AABBIntersection(node.box[0], node.box[1], ray)){
+                if (node.is_leaf){
+                    for (auto& face: nodes[i].faces){
+                        tests.push_back(face);
+                    }
+                }
+                else{
+                    for (int j = 0; j < 8; j++){
+                        stack.push(nodes[(i+1)*8 + j]);
+                    }
+                }
+            }
         }
 
-        ~Octree(){
-            root = SpaceTreeNode();
-            vertices.clear();
+        // return array with no duplicate faces
+        std::set<std::vector<int>> s;
+        unsigned size = tests.size();
+        for(unsigned i = 0; i < size; i++){
+            s.insert(tests[i]);
         }
-
-        std::vector<std::vector<int>> intersection(Ray ray){
-            // doesn't intersect with root nodes bounding box
-            if (!AABBIntersection(root.box[0], root.box[1], ray)){
-                // return empty array
-                std::vector<std::vector<int>> array;
-                return array;
-            }
-            // find the faces we need to test
-            std::vector<std::vector<int>> tests = {};
-            for (SpaceTreeNode& node: root.children){
-                node.intersection(ray, tests);
-            }
-            // return array with no duplicate faces
-            std::set<std::vector<int>> s;
-            unsigned size = tests.size();
-            for(unsigned i = 0; i < size; i++){
-                s.insert(tests[i]);
-            }
-            tests.assign(s.begin(), s.end());
-            return tests;
-        }
-
-    public:
-        uint8_t depth;
-        Vector3 box[2];
-        std::vector<Vector3> vertices;
-        SpaceTreeNode root;
+        tests.assign(s.begin(), s.end());
+        return tests;
+    }
 };

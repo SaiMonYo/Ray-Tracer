@@ -1,7 +1,9 @@
 #include "Ray.h"
 
+int AABBIntersectionCount = 0;
 
 inline bool AABBIntersection(const Vector3& min, const Vector3& max, const Ray& ray){
+    AABBIntersectionCount++;
     // ray AABB intersection using Nvidia's ray slab intersection algorithm
     Vector3 t0 = (min - ray.origin) * ray.inv_direction;
     Vector3 t1 = (max - ray.origin) * ray.inv_direction;

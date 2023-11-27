@@ -4,5 +4,5 @@
 
 struct Triangle{
     Vector3 vertices[3];
-    
+    int face_index;
 };

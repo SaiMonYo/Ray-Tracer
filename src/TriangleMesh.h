@@ -19,6 +19,8 @@ std::string replaceSlash(std::string str){
 }
 
 struct TriangleMesh: public Observable{
+    int tri_count = 0;
+
     TriangleMesh(const std::string& filename, Material material_){
         std::ifstream file(filename);
         if(!file.is_open()){
@@ -221,6 +223,7 @@ struct TriangleMesh: public Observable{
         if (possibleFaces.size() == 0){
             return false;
         }
+        tri_count += possibleFaces.size();
         for(int i = 0; i < possibleFaces.size(); i++){
             // check if ray intersects face by using moller-trumbore algorithm
             auto face = possibleFaces[i];
