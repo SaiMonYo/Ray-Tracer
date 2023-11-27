@@ -14,6 +14,7 @@ struct SpaceTreeNode{
     bool is_leaf = false;
     bool is_dead = false;
     std::vector<std::vector<int>> faces;
+    std::vector<int> children;
 
     SpaceTreeNode(){
     }
@@ -43,6 +44,7 @@ struct Octree{
     Octree(Vector3 boundingBox_[2], std::vector<std::vector<int>>& faces_, std::vector<Vector3>& vertices_, uint8_t depth_){
         // add the meshes bounding box to the roots 
         root = SpaceTreeNode(boundingBox_[0], boundingBox_[1], -1);
+        root.is_dead = false;
         depth = depth_;
         vertices = vertices_;
         build();
@@ -112,15 +114,18 @@ struct Octree{
     }
 
     void insert(std::vector<std::vector<int>>& faces_){
+        std::vector<int> face_count(nodes.size(), 0);
         for (std::vector<int> face: faces_){
             std::stack<SpaceTreeNode> stack;
-            stack.push(root);
+            for (int j = 0; j < 8; j++){
+                stack.push(nodes[j]);
+            }
             while (!stack.empty()){
                 SpaceTreeNode node = stack.top();
                 stack.pop();
                 int i = node.index;
-                AABBIntersectionCount++;
                 if (AABBIntersection(node.centre, node.extents, vertices[face[0] - 1], vertices[face[3] - 1], vertices[face[6] - 1])){
+                    face_count[i]++;
                     if (nodes[i].is_leaf){
                         nodes[i].faces.push_back(face);
                     }
@@ -132,22 +137,44 @@ struct Octree{
                 }
             }
         }
-    }
-
-    void cull(){
-
+        for (int i = 0; i < nodes.size(); i++){
+            if (face_count[i] == 0){
+                nodes[i].is_dead = true;
+            }
+        }
+        for (int i = 0; i < nodes.size(); i++){
+            if (nodes[i].is_dead || nodes[i].is_leaf){
+                continue;
+            }
+            int base_index = (i+1) * 8;
+            for (int j = 0; j < 8; j++){
+                if (!nodes[base_index + j].is_dead){
+                    nodes[i].children.push_back(base_index + j);
+                }
+            }
+        }
     }
     
 
-    std::vector<std::vector<int>> intersection(Ray ray){        
+    std::vector<std::vector<int>> intersection(Ray ray){       
+        if (!AABBIntersection(root.box[0], root.box[1], ray)){
+            return {};
+        }
+
         // find the faces we need to test
         std::vector<std::vector<int>> tests = {};
         
         std::stack<SpaceTreeNode> stack;
-        stack.push(root);
+        for (int j = 0; j < 8; j++){
+            stack.push(nodes[j]);
+        }
         while (!stack.empty()){
             SpaceTreeNode node = stack.top();
             stack.pop();
+            if (node.is_dead){
+                std::cout << "dead" << std::endl;
+                continue;
+            }
             int i = node.index;
             if (AABBIntersection(node.box[0], node.box[1], ray)){
                 if (node.is_leaf){
@@ -156,8 +183,8 @@ struct Octree{
                     }
                 }
                 else{
-                    for (int j = 0; j < 8; j++){
-                        stack.push(nodes[(i+1)*8 + j]);
+                    for (int j: nodes[i].children){
+                        stack.push(nodes[j]);
                     }
                 }
             }

@@ -3,6 +3,7 @@
 #include "Scene.h"
 #include "QOI.h"
 #include "Camera.h"
+#include <chrono>
 
 
 
@@ -70,6 +71,7 @@ struct Renderer{
     }
 
     void render(){
+        auto start = std::chrono::high_resolution_clock::now();
         Camera cam = Camera(width, height);
 
         std::cout << "Rendering..." << std::endl;
@@ -84,6 +86,8 @@ struct Renderer{
             }
         }
         std::cout << "100% complete" << std::endl;
+        auto end = std::chrono::high_resolution_clock::now();
+        std::cout << "Render time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
     }
 
     Vector3 tonemap(Vector3 lin_rgb){
