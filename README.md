@@ -1,0 +1,1 @@
+![Bust of rhetoricab](images/bust_down.png)
