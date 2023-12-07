@@ -2,7 +2,7 @@
 
 #include "Ray.h"
 #include "Observable.h"
-#include "Octree.h"
+#include "OctreeRec.h"
 
 
 std::string replaceSlash(std::string str){
@@ -19,8 +19,6 @@ std::string replaceSlash(std::string str){
 }
 
 struct TriangleMesh: public Observable{
-    int tri_count = 0;
-
     TriangleMesh(const std::string& filename, Material material_){
         std::ifstream file(filename);
         if(!file.is_open()){
@@ -60,6 +58,11 @@ struct TriangleMesh: public Observable{
                 std::string type;
                 iss >> type;
                 std::string fc;
+                // still need to handle different types of faces
+                // type 0 - f 1/2/3 4/5/6 7/8/9
+                // type 1 - f 1/2 3/4 5/6
+                // type 2 - f 1//2 3//4 5//6
+                // type 3 - f 1 2 3
                 if(type == "f"){
                     std::vector<int> face;
                     while (iss >> fc){
@@ -77,15 +80,19 @@ struct TriangleMesh: public Observable{
                 }
             }
         }
+        if (normals.size() == 0){
+            recalcNormals();
+        }
         std::cout << "vertices: " << vertices.size() << std::endl;
         std::cout << "normals: " << normals.size() << std::endl;
         std::cout << "texcoords: " << texcoords.size() << std::endl;
         file.close();
         // calculate normals if they are not given
-        if (normals.size() == 0){
-            recalcNormals();
-        }
         recalcBoundingBox();
+    }
+
+    void parse_face(std::vector<int> face, std::string line){
+        
     }
 
     void rescale(float factor){
@@ -97,6 +104,7 @@ struct TriangleMesh: public Observable{
     }
 
     void recalcNormals(){
+        normals.clear();
         for (int i = 0; i < faces.size(); i++){
             normals.push_back(Vector3(0,0,0));
         }
@@ -105,9 +113,9 @@ struct TriangleMesh: public Observable{
             Vector3 v1 = vertices[face[3] - 1];
             Vector3 v2 = vertices[face[6] - 1];
             Vector3 normal = Vector3::normalize(Vector3::cross((v1 - v0),(v2 - v0)));
-            normals[face[2] - 1] = normal;
-            normals[face[5] - 1] = normal;
-            normals[face[8] - 1] = normal;
+            normals[face[2] - 1] += normal;
+            normals[face[5] - 1] += normal;
+            normals[face[8] - 1] += normal;
         }
         for (int i = 0; i < normals.size(); i++){
             normals[i] = Vector3::normalize(normals[i]);
@@ -211,73 +219,29 @@ struct TriangleMesh: public Observable{
     }
 
     bool intersect(Ray& ray, RayHit& inter){
-        if (!AABBIntersection(boundingBox[0], boundingBox[1], ray)){
+        if (AABBIntersection(boundingBox[0], boundingBox[1], ray) < 0){
             return false;
         }
-        int index = -1;
-        float pu = 0;
-        float pv = 0;
         bool in = false;
-        std::vector<std::vector<int>> possibleFaces = tree.intersection(ray);
+        bool hit = tree.intersection(ray, inter);
         // check if all elements in possibleFaces are in faces
-        if (possibleFaces.size() == 0){
+        if (!hit){
             return false;
         }
-        tri_count += possibleFaces.size();
-        for(int i = 0; i < possibleFaces.size(); i++){
-            // check if ray intersects face by using moller-trumbore algorithm
-            auto face = possibleFaces[i];
-            Vector3 v0 = vertices[face[0] - 1];
-            Vector3 v1 = vertices[face[3] - 1];
-            Vector3 v2 = vertices[face[6] - 1];
-            Vector3 v0v1 = v1 - v0;
-            Vector3 v0v2 = v2 - v0;
-            Vector3 pvec = Vector3::cross(ray.direction, v0v2);
-            float det = Vector3::dot(v0v1,pvec);
-            if (std::fabs(det) < EPSILON){
-                continue;
-            }
-
-            float invdet = 1.0 / det;
-            Vector3 tvec = ray.origin - v0;
-            float u = Vector3::dot(tvec, pvec) * invdet;
-            
-            if (u < 0 || u > 1){
-                continue;
-            }
-
-            Vector3 qvec = Vector3::cross(tvec, v0v1);
-            float v = Vector3::dot(ray.direction, qvec) * invdet;
-
-            if (v < 0 || u + v > 1){
-                continue;
-            }
-
-            float t = Vector3::dot(v0v2,qvec) * invdet;
-            if (t > EPSILON && t < inter.distance){
-                in = (det < 0);
-                pu = u;
-                pv = v;
-                inter.distance = t;
-                index = i;
-            }
-        }
+        
         // index is greater than -1 if there is an intersection
-        if (index > -1){
-            inter.point = ray.at(inter.distance);
-            auto face = possibleFaces[index];
-            // if (Ntex->implemented){
-            //     inter.normal = Ntex->get_colour(inter.u, inter.v);
-            // }
-            // else{
-                inter.normal = Vector3::normalize(normals[face[2] - 1] * (1 - pu - pv) + normals[face[5] - 1] * pu + normals[face[8] - 1] * pv);
-            //}
-            Vector3 uv = texcoords[face[1] - 1] * (1 - pu - pv) + texcoords[face[4] - 1] * pu + texcoords[face[7] - 1] * pv;
-            inter.u = uv.x;
-            inter.v = uv.y;
-            return true;
-        }
-        return false;
+        inter.point = ray.at(inter.distance);
+        auto face = faces[inter.index];
+        // if (Ntex->implemented){
+        //     inter.normal = Ntex->get_colour(inter.u, inter.v);
+        // }
+        // else{
+            inter.normal = Vector3::normalize(normals[face[2] - 1] * (1 - inter.hu - inter.hv) + normals[face[5] - 1] * inter.hu + normals[face[8] - 1] * inter.hv);
+        //}
+        Vector3 uv = texcoords[face[1] - 1] * (1 - inter.hu - inter.hv) + texcoords[face[4] - 1] * inter.hu + texcoords[face[7] - 1] * inter.hv;
+        inter.u = uv.x;
+        inter.v = uv.y;
+        return true;
     }
 
     std::vector<Vector3> vertices;

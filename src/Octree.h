@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <stack>
+#include <algorithm>
 #include <set>
 
 struct SpaceTreeNode{
@@ -37,6 +38,7 @@ struct Octree{
     SpaceTreeNode root;
     std::vector<Vector3> vertices;
     std::vector<SpaceTreeNode> nodes;
+    int starting_max_index = 0;
 
     Octree(){
     }
@@ -124,7 +126,7 @@ struct Octree{
                 SpaceTreeNode node = stack.top();
                 stack.pop();
                 int i = node.index;
-                if (AABBIntersection(node.centre, node.extents, vertices[face[0] - 1], vertices[face[3] - 1], vertices[face[6] - 1])){
+                if (AABBIntersection(node.centre, node.extents, Triangle(vertices[face[0] - 1], vertices[face[3] - 1], vertices[face[6] - 1], 1))){
                     face_count[i]++;
                     if (nodes[i].is_leaf){
                         nodes[i].faces.push_back(face);
@@ -153,6 +155,57 @@ struct Octree{
                 }
             }
         }
+        starting_max_index = 8;
+
+        
+        bool done = false;
+        while (!done){
+            done = true;
+            for (int i = 0; i < nodes.size(); i++){
+                if (nodes[i].is_dead || nodes[i].is_leaf){
+                    continue;
+                }
+                if (nodes[i].children.size() == 0){
+                    nodes[i].is_dead = true;
+                    done = false;
+                }
+            }
+        }
+        
+        
+        std::vector<int> map(nodes.size(), -1);
+        std::vector<SpaceTreeNode> new_nodes;
+        for (int i = 0; i < nodes.size(); i++){
+            if (!nodes[i].is_dead){
+                map[i] = new_nodes.size();
+                new_nodes.push_back(nodes[i]);
+            }
+        }
+        for (int i = 0; i < new_nodes.size(); i++){
+            std::vector<int> new_children;
+            for (int j = 0; j < new_nodes[i].children.size(); j++){
+                int index = map[new_nodes[i].children[j]];
+                if (index > -1){
+                    new_children.push_back(index);
+                }
+            }
+            new_nodes[i].children = new_children;
+        }
+        nodes.clear();
+        nodes = new_nodes;
+
+        std::cout << nodes.size() << std::endl;
+
+        for (int i = 0; i < starting_max_index; i++){
+            if (map[i] == -1){
+                starting_max_index = i;
+                break;
+            }
+        }
+
+        for (int i = 0; i < nodes.size(); i++){
+            nodes[i].index = i;
+        }
     }
     
 
@@ -160,22 +213,20 @@ struct Octree{
         if (!AABBIntersection(root.box[0], root.box[1], ray)){
             return {};
         }
-
         // find the faces we need to test
         std::vector<std::vector<int>> tests = {};
         
-        std::stack<SpaceTreeNode> stack;
-        for (int j = 0; j < 8; j++){
-            stack.push(nodes[j]);
+        std::stack<int> stack;
+        for (int j = 0; j < starting_max_index; j++){
+            stack.push(j);
         }
         while (!stack.empty()){
-            SpaceTreeNode node = stack.top();
+            int i = stack.top();
             stack.pop();
+            SpaceTreeNode node = nodes[i];
             if (node.is_dead){
-                std::cout << "dead" << std::endl;
                 continue;
             }
-            int i = node.index;
             if (AABBIntersection(node.box[0], node.box[1], ray)){
                 if (node.is_leaf){
                     for (auto& face: nodes[i].faces){
@@ -184,7 +235,7 @@ struct Octree{
                 }
                 else{
                     for (int j: nodes[i].children){
-                        stack.push(nodes[j]);
+                        stack.push(j);
                     }
                 }
             }

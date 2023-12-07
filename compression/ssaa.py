@@ -1,6 +1,8 @@
 from PIL import Image
 
-img = Image.open("images/trioupped.png")
+Image.MAX_IMAGE_PIXELS = None
+
+img = Image.open("images/bust_down.png")
 up = 3
 a = (up-1) // 2
 factor = 1/ (up * up)
@@ -21,4 +23,4 @@ for y in range(0, img.height, up):
                 b += pixels[x+dx, y+dy][2] * factor
         new_pixels[x//up, y//up] = (int(r), int(g), int(b))
 
-new_img.save("images/triodown.png")
+new_img.save("images/bust_down_down.png")

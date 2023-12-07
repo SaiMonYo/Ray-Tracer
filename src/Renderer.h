@@ -41,7 +41,7 @@ struct Renderer{
         Vector3 V = Vector3::normalize(O-P);
         Vector3 K_d = mat.K_d;
 
-        if (world.objects[index]->K_Atex->implemented){;
+        if (world.objects[index]->K_Atex->implemented){
             K_d = world.objects[index]->K_Atex->get_colour(u, v);
         }
         Vector3 K_s = mat.K_s;
@@ -74,14 +74,16 @@ struct Renderer{
         auto start = std::chrono::high_resolution_clock::now();
         Camera cam = Camera(width, height);
 
+        int tenpercent = height/10;
+
         std::cout << "Rendering..." << std::endl;
         for (int z = 0; z < height; z++){
             for (int x = 0; x < width; x++){
                 Ray r = cam.castRay(x,z);
                 Vector3 lin_rgb = trace(r);
-                out->write_pixel(tonemap(lin_rgb)*255);
+                out->write_pixel(lin_rgb*255);
             }
-            if (z % 20 == 0){
+            if (z % tenpercent == 0){
                 std::cout << (100.0*z)/(height) << "% complete" << std::endl;
             }
         }
@@ -91,7 +93,6 @@ struct Renderer{
     }
 
     Vector3 tonemap(Vector3 lin_rgb){
-        return lin_rgb;
         double inv_gamma = 1./2.2;
         double a = 2;
         double b = 1.3;

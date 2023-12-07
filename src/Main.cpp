@@ -7,8 +7,8 @@
 #include "TriangleMesh.h"
 
 std::string DEFAULT_OUTPUT = "images/result.qoi";
-int DEFAULT_WIDTH = 800;
-int DEFAULT_HEIGHT = 600;
+int DEFAULT_WIDTH = 1080;
+int DEFAULT_HEIGHT = 2340;
 
 int start(){
     std::ofstream output(DEFAULT_OUTPUT, std::ios::out|std::ios::binary);
@@ -70,7 +70,37 @@ void wd40(){
 
     Renderer ren = Renderer(&qoi, DEFAULT_WIDTH, DEFAULT_HEIGHT, world);
     ren.render();
-    std::cout << lube->tri_count << std::endl;
+    std::cout << triangle_count << std::endl;
+    std::cout << AABBIntersectionCount << std::endl;
+
+    output.close();
+}
+
+void bust(){
+    std::ofstream output(DEFAULT_OUTPUT, std::ios::out|std::ios::binary);
+    QOIWriter qoi = QOIWriter(output, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+
+    Scene world = Scene();
+
+    Material lube_mat = parse_material("objs/wd40/lubricant_spray_8k.mtl");
+    std::cout << lube_mat.K_d << std::endl;
+    lube_mat.K_a = Vector3(1);
+    std::shared_ptr<TriangleMesh> rhet = std::make_shared<TriangleMesh>("objs/rhetorican/source/bust.obj", lube_mat);
+    //rhet->rotate(0, -M_PI/4, M_PI/2);
+    rhet->rotate(0, 0, -M_PI/4);
+    //rhet->rescale(0.5);
+    rhet->translate(Vector3(0, 20, -15));
+    rhet->recalcNormals();
+    rhet->recalcOctree();
+    rhet->K_Atex = std::make_shared<ImageTexture>("objs/rhetorican/source/retheur_-_LowPoly_u1_v1.qoi");
+    world.add_object(rhet);
+
+    world.ambientColour = Vector3::to_colour("#FFFFFF") * 0.3;
+    world.add_light(std::make_shared<SphericalLight>(Vector3(-10,15,6), Vector3::to_colour("#FFFFFF"), 500, 0));
+
+    Renderer ren = Renderer(&qoi, DEFAULT_WIDTH, DEFAULT_HEIGHT, world);
+    ren.render();
+    std::cout << triangle_count << std::endl;
     std::cout << AABBIntersectionCount << std::endl;
 
     output.close();
@@ -81,5 +111,6 @@ void wd40(){
 int main(){
     //test();
     //start();
-    wd40();
+    //wd40();
+    bust();
 }

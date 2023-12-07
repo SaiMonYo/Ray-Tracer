@@ -57,38 +57,38 @@ class SpaceTreeNode{
             children.push_back(TRB);
         }
 
-        bool insert(std::vector<int>& face, Vector3 v0, Vector3 v1, Vector3 v2, uint8_t depth){
+        bool insert(Triangle tri, uint8_t depth){
             if (depth <= 1){
                 // within the insertion box
-                if (AABBIntersection(center, extents, v0, v1, v2)){
-                    return true;
-                }
-                return false;
+                return AABBIntersection(center, extents, tri);
+                
             }
             // within in the current box
-            if (AABBIntersection(center, extents, v0, v1, v2)){
+            if (AABBIntersection(center, extents, tri)){
                 for (SpaceTreeNode& child: children){
-                    if (child.insert(face, v0, v1, v2, depth -1)){
-                        child.faces.push_back(face);
+                    if (child.insert(tri, depth -1)){
+                        child.faces.push_back(tri);
                     }
                 }
             }
             return false;
         }
 
-        bool intersection(Ray ray, std::vector<std::vector<int>>& array){
+        bool intersection(Ray ray, RayHit& inter){
             bool hit = false;
-            if (AABBIntersection(box[0], box[1], ray)){
+            float t = AABBIntersection(box[0], box[1], ray);
+            if (t > 0 && AABBIntersection(box[0], box[1], ray) < inter.distance){
                 // at bottom if no children
                 if (children.size() == 0){
-                    for (auto& face: faces){
-                        array.push_back(face);
+                    // intersect triangles
+                    for (auto& tri: faces){
+                        hit |= ray_triangle(ray, inter, tri);
                     }
-                    return true;
+                    return hit;
                 }
                 // check children
                 for (SpaceTreeNode& node: children){
-                    hit = node.intersection(ray, array) || hit;
+                    hit |= node.intersection(ray, inter);
                 }
             }
             return hit;
@@ -111,7 +111,7 @@ class SpaceTreeNode{
         Vector3 center;
         Vector3 extents;
         std::vector<SpaceTreeNode> children;
-        std::vector<std::vector<int>> faces;
+        std::vector<Triangle> faces;
 };
 
 class Octree{
@@ -125,11 +125,13 @@ class Octree{
             depth = depth_;
             vertices = vertices_;
             root.build(depth);
-            for (std::vector<int> face: faces_){
+            for (int i = 0; i < faces_.size(); i++){
                 // inserting each face into the tree
+                std::vector<int> face = faces_[i];
                 for (SpaceTreeNode& child: root.children){
-                     if (child.insert(face, vertices[face[0] - 1], vertices[face[3] - 1], vertices[face[6] - 1], depth)){
-                        child.faces.push_back(face);
+                    Triangle tri = Triangle(vertices[face[0] - 1], vertices[face[3] - 1], vertices[face[6] - 1], i);
+                    if (child.insert(tri, depth)){
+                        child.faces.push_back(tri);
                     }
                 }
             }
@@ -141,26 +143,18 @@ class Octree{
             vertices.clear();
         }
 
-        std::vector<std::vector<int>> intersection(Ray ray){
+        bool intersection(Ray ray, RayHit& inter){
             // doesn't intersect with root nodes bounding box
-            if (!AABBIntersection(root.box[0], root.box[1], ray)){
+            if (AABBIntersection(root.box[0], root.box[1], ray) < 0){
                 // return empty array
-                std::vector<std::vector<int>> array;
-                return array;
+                return false;
             }
             // find the faces we need to test
-            std::vector<std::vector<int>> tests = {};
+            bool hit = false;
             for (SpaceTreeNode& node: root.children){
-                node.intersection(ray, tests);
+                hit |= node.intersection(ray, inter);
             }
-            // return array with no duplicate faces
-            std::set<std::vector<int>> s;
-            unsigned size = tests.size();
-            for(unsigned i = 0; i < size; i++){
-                s.insert(tests[i]);
-            }
-            tests.assign(s.begin(), s.end());
-            return tests;
+            return hit;
         }
 
     public:

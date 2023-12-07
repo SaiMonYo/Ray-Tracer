@@ -2,6 +2,8 @@
 /main.exe
 *.exe
 *.qoi
+*.txt
+*.png
 images/result.png
 objs/
 test.py

@@ -10,6 +10,8 @@ struct RayHit{
     int index = -1;
     float u;
     float v;
+    float hu;
+    float hv;
 
     RayHit(){distance = 1e8;}
 };

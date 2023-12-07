@@ -1,23 +1,29 @@
-#include "Ray.h"
+#include "Triangle.h"
 
-int AABBIntersectionCount = 0;
+unsigned long long AABBIntersectionCount = 0;
 
-inline bool AABBIntersection(const Vector3& min, const Vector3& max, const Ray& ray){
+inline float AABBIntersection(const Vector3& min, const Vector3& max, const Ray& ray){
     AABBIntersectionCount++;
     // ray AABB intersection using Nvidia's ray slab intersection algorithm
-    Vector3 t0 = (min - ray.origin) * ray.inv_direction;
-    Vector3 t1 = (max - ray.origin) * ray.inv_direction;
-    Vector3 tmin = Vector3::min(t0, t1);
-    Vector3 tmax = Vector3::max(t0, t1);
+    Vector3 f = (min - ray.origin) * ray.inv_direction;
+    Vector3 n = (max - ray.origin) * ray.inv_direction;
+    Vector3 tmin = Vector3::min(f, n);
+    Vector3 tmax = Vector3::max(f, n);
 
-    return (Vector3::max_component(tmin) <= Vector3::min_component(tmax));
+    float t1 = Vector3::min_component(tmax);
+    float t0 = Vector3::max_component(tmin);
+
+    return (t1 >= t0) ? (t0 > 0.f ? t0 : t1) : -1.0;
 }
 
-inline bool AABBIntersection(const Vector3& center, const Vector3& e, Vector3 v0, Vector3 v1, Vector3 v2){
+inline bool AABBIntersection(const Vector3& center, const Vector3& e, Triangle& tri){
     // crude AABB-triangle intersection
     // creates a bounding box around triangle and checks for intersection with AABB
     // quick but quite a few false positives
     // speeds up octree creation but slows down raytracing
+    Vector3 v0 = tri.vertices[0];
+    Vector3 v1 = tri.vertices[1];
+    Vector3 v2 = tri.vertices[2];
     Vector3 top = Vector3::max(v0, Vector3::max(v1,v2));
     Vector3 bottom = Vector3::min(v0, Vector3::min(v1, v2));
     Vector3 center1 = (top + bottom) / 2.0f;
