@@ -54,30 +54,9 @@ struct TriangleMesh: public Observable{
             }
             // face
             else if (line[0] == 'f'){
-                std::istringstream iss(line);
-                std::string type;
-                iss >> type;
-                std::string fc;
-                // still need to handle different types of faces
-                // type 0 - f 1/2/3 4/5/6 7/8/9
-                // type 1 - f 1/2 3/4 5/6
-                // type 2 - f 1//2 3//4 5//6
-                // type 3 - f 1 2 3
-                if(type == "f"){
-                    std::vector<int> face;
-                    while (iss >> fc){
-                        fc = replaceSlash(fc);
-                        int v;
-                        std::istringstream fcss(fc);
-                        fcss >> v;
-                        face.push_back(v);
-                        fcss >> v;
-                        face.push_back(v);
-                        fcss >> v;
-                        face.push_back(v);
-                    }
-                    faces.push_back(face);
-                }
+                std::vector<int> face;
+                parse_face(face, line);
+                faces.push_back(face);
             }
         }
         if (normals.size() == 0){
@@ -91,8 +70,66 @@ struct TriangleMesh: public Observable{
         recalcBoundingBox();
     }
 
-    void parse_face(std::vector<int> face, std::string line){
-        
+    void parse_face(std::vector<int>& face, std::string line){
+        std::istringstream iss(line);
+        std::string type;
+        iss >> type;
+        std::string fc;
+
+        while (iss >> fc){
+            fc = replaceSlash(fc);
+            int v;
+            std::istringstream fcss(fc);
+            fcss >> v;
+            face.push_back(v);
+            fcss >> v;
+            face.push_back(v);
+            fcss >> v;
+            face.push_back(v);
+        }
+
+        int ftype = face_type(line);
+        if (ftype == 1){
+            face[2] = face[0];
+            face[5] = face[3];
+            face[8] = face[6];
+            return;
+        }
+        else if(ftype == -1){
+            std::cerr << "Unknown face type" << std::endl;
+            return;
+        }
+    }
+
+    int face_type(std::string line){
+        // type 0 - f 1/2/3 4/5/6 7/8/9
+        // type 1 - f 1/2 3/4 5/6
+        // type 2 - f 1//2 3//4 5//6
+        // type 3 - f 1 2 3
+        if (line.find("//") != std::string::npos){
+            return 2;
+        }
+        if (line.find("/") == std::string::npos){
+            return 3;
+        }
+        // count number of "/"
+        int count = 0;
+        for (int i = 0; i < line.length(); i++){
+            if (line[i] == '/'){
+                count++;
+            }
+        }
+        if (count == 6){
+            return 0;
+        }
+        else if (count == 3){
+            return 1;
+        }
+        else {
+            std::cout << line << std::endl;
+            std::cerr << "Unknown face type" << std::endl;
+            return -1;
+        }
     }
 
     void rescale(float factor){
