@@ -3,9 +3,10 @@
 #include "Ray.h"
 #include "Observable.h"
 #include "OctreeRec.h"
+#include "Mat4.h"
 
 
-std::string replaceSlash(std::string str){
+std::string replace_slash(std::string str){
     std::string newStr = "";
     for (int i = 0; i < str.length(); i++){
         if (str[i] == '/'){
@@ -19,6 +20,15 @@ std::string replaceSlash(std::string str){
 }
 
 struct TriangleMesh: public Observable{
+    std::vector<Vector3> vertices;
+    std::vector<Vector3> normals;
+    std::vector<Vector3> texcoords;
+    std::vector<Vector3> faceNormals;
+    std::vector<std::vector<int>> faces;
+    Mat4 object_matrix;
+    Vector3 boundingBox[2];
+    Octree tree;
+
     TriangleMesh(const std::string& filename, Material material_){
         std::ifstream file(filename);
         if(!file.is_open()){
@@ -60,14 +70,14 @@ struct TriangleMesh: public Observable{
             }
         }
         if (normals.size() == 0){
-            recalcNormals();
+            calculate_normals();
         }
         std::cout << "vertices: " << vertices.size() << std::endl;
         std::cout << "normals: " << normals.size() << std::endl;
         std::cout << "texcoords: " << texcoords.size() << std::endl;
         file.close();
         // calculate normals if they are not given
-        recalcBoundingBox();
+        recalc_bounding_box();
     }
 
     void parse_face(std::vector<int>& face, std::string line){
@@ -77,7 +87,7 @@ struct TriangleMesh: public Observable{
         std::string fc;
 
         while (iss >> fc){
-            fc = replaceSlash(fc);
+            fc = replace_slash(fc);
             int v;
             std::istringstream fcss(fc);
             fcss >> v;
@@ -132,15 +142,8 @@ struct TriangleMesh: public Observable{
         }
     }
 
-    void rescale(float factor){
-        Vector3 centroid = getCentroid();
-        for (int i = 0; i < vertices.size(); i++){
-            vertices[i] = (vertices[i] - centroid) * factor + centroid;
-        }
-        recalcBoundingBox();
-    }
 
-    void recalcNormals(){
+    void calculate_normals(){
         normals.clear();
         for (int i = 0; i < faces.size(); i++){
             normals.push_back(Vector3(0,0,0));
@@ -159,7 +162,7 @@ struct TriangleMesh: public Observable{
         }
     }
 
-    void recalcBoundingBox(){
+    void recalc_bounding_box(){
         // calculate bounding box for quick intersection testing
         Vector3 vmax = Vector3(-1e8);
         Vector3 vmin = Vector3(1e8);
@@ -174,12 +177,12 @@ struct TriangleMesh: public Observable{
         boundingBox[1] = vmax + extend;
     }
 
-    void recalcOctree(){
-        recalcBoundingBox();
+    void recalc_octree(){
+        recalc_bounding_box();
         tree = Octree(boundingBox, faces, vertices, 7);
     }
 
-    Vector3 getCentroid(){
+    Vector3 get_centroid(){
         Vector3 centroid = Vector3(0,0,0);
         for (const auto& v : vertices){
             centroid += v;
@@ -193,60 +196,23 @@ struct TriangleMesh: public Observable{
         for (int i = 0; i < vertices.size(); i++){
             vertices[i] -= cent;
         }
-        recalcBoundingBox();
+        recalc_bounding_box();
     }
 
-    void floor(){
-        recalcBoundingBox();
-        float miny = boundingBox[0].y;
-        translate(Vector3(0, -miny, 0));
-    }
-    
-    void floor(float floorHeight){
-        float miny = boundingBox[0].y;
-        translate(Vector3(0, -miny + floorHeight, 0));
-    }
-
-    void rotate(float pitch, float roll, float yaw){
-        float cosa = cos(yaw);
-        float sina = sin(yaw);
-
-        float cosb = cos(pitch);
-        float sinb = sin(pitch);
-
-        float cosc = cos(roll);
-        float sinc = sin(roll);
-
-        float Axx = cosa * cosb;
-        float Axy = cosa * sinb * sinc - sina * cosc;
-        float Axz = cosa * sinb * cosc + sina * sinc;
-
-        float Ayx = sina * cosb;
-        float Ayy = sina * sinb * sinc + cosa * cosc;
-        float Ayz = sina * sinb * cosc - cosa * sinc;
-
-        float Azx = -sinb;
-        float Azy = cosb * sinc;
-        float Azz = cosb * cosc;
-
+    void transform(){
         for (int i = 0; i < vertices.size(); i++){
-            Vector3 v = vertices[i];
-            vertices[i] = Vector3(
-                v.x * Axx + v.y * Ayx + v.z * Azx,
-                v.x * Axy + v.y * Ayy + v.z * Azy,
-                v.x * Axz + v.y * Ayz + v.z * Azz
-            );
+            vertices[i] = Mat4::transform_point(object_matrix, vertices[i]);
         }
-        recalcNormals();
-        recalcBoundingBox();
+        recalc_bounding_box();
+
+        Mat4 inv = Mat4::invert(object_matrix);
+        Mat4 norm_matrix = Mat4::transpose(inv);
+
+        for (int i = 0; i < normals.size(); i++){
+            normals[i] = Mat4::transform_direction(norm_matrix, normals[i]);
+        }
     }
 
-    void translate(const Vector3& translation){
-        for(auto& v : vertices){
-            v += translation;
-        }
-        recalcBoundingBox();
-    }
 
     ~TriangleMesh(){
         vertices.clear();
@@ -280,12 +246,4 @@ struct TriangleMesh: public Observable{
         inter.v = uv.y;
         return true;
     }
-
-    std::vector<Vector3> vertices;
-    std::vector<Vector3> normals;
-    std::vector<Vector3> texcoords;
-    std::vector<Vector3> faceNormals;
-    std::vector<std::vector<int>> faces;
-    Vector3 boundingBox[2];
-    Octree tree;
 };

@@ -57,10 +57,10 @@ void wd40(){
     std::cout << lube_mat.K_d << std::endl;
     lube_mat.K_a = Vector3(1);
     std::shared_ptr<TriangleMesh> lube = std::make_shared<TriangleMesh>("objs/wd40/lubricant_spray_8k.obj", lube_mat);
-    lube->rotate(0, -M_PI_2, 0);
-    lube->rescale(10);
-    lube->translate(Vector3(0, 4, 0));
-    lube->recalcOctree();
+    // lube->rotate(0, -M_PI_2, 0);
+    // lube->rescale(10);
+    // lube->translate(Vector3(0, 4, 0));
+    // lube->recalcOctree();
     lube->K_Atex = std::make_shared<ImageTexture>("objs/wd40/textures/lubricant_spray_diff_8k.qoi");
 
     world.add_object(lube);
@@ -86,13 +86,12 @@ void bust(){
     std::cout << lube_mat.K_d << std::endl;
     lube_mat.K_a = Vector3(1);
     std::shared_ptr<TriangleMesh> rhet = std::make_shared<TriangleMesh>("objs/rhetorican/source/bust.obj", lube_mat);
-    //rhet->rotate(0, -M_PI/4, M_PI/2);
-    rhet->rotate(0, 0, -M_PI/4);
-    //rhet->rescale(0.5);
-    rhet->translate(Vector3(0, 20, -15));
-    rhet->recalcNormals();
-    rhet->recalcOctree();
+
+    Mat4 object_matrix = Mat4::create_translation(Vector3(0, 20, -15)) * Mat4::create_rotation(Vector3(0, 0, M_PI/4));
+    rhet->object_matrix = object_matrix;
+    rhet->transform();
     rhet->K_Atex = std::make_shared<ImageTexture>("objs/rhetorican/source/retheur_-_LowPoly_u1_v1.qoi");
+    rhet->recalc_octree();
     world.add_object(rhet);
 
     world.ambientColour = Vector3::to_colour("#FFFFFF") * 0.3;
