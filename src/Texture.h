@@ -32,8 +32,10 @@ struct ImageTexture : public Texture{
         qoi.read_all(pixels);
         input.close();
     }
+
     Vector3 get_colour(float u, float v){
         int x = (int)(u * width);
+        // image is flipped in vertically
         int y = (int)((1-v) * height);
         return pixels.at(y * width + x);
     }

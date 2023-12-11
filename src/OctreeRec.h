@@ -119,7 +119,7 @@ class Octree{
         Octree(){
         }
 
-        Octree(Vector3 boundingBox_[2], std::vector<std::vector<int>>& faces_, std::vector<Vector3>& vertices_, uint8_t depth_){
+        Octree(Vector3 boundingBox_[2], std::vector<std::vector<int> >& faces_, std::vector<Vector3>& vertices_, uint8_t depth_){
             // add the meshes bounding box to the roots 
             root = SpaceTreeNode(boundingBox_[0], boundingBox_[1]);
             depth = depth_;

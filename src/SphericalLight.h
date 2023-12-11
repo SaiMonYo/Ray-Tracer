@@ -17,6 +17,8 @@ struct SphericalLight: Light{
         return position + random_unit_vector() * radius;
     }
 
+    // intensity decreases as function of surface area
+    // 4 * pi * r^2
     Vector3 ilumination_at(float dist){
         return colour * intensity / (M_PI * 4 * dist * dist);
     }

@@ -6,9 +6,27 @@
 #include "Light.h"
 #include "RayHit.h"
 
+
+
+
+/*
+       +Z
+        |      +Y
+        |      /
+        |     /
+        |    /
+        |   /
+        |  /
+        | /
+        |/_______________________ +X
+
+*/
+
 struct Scene{
+    // keeps track of objects and lights
     std::vector<std::shared_ptr<Observable>> objects;
     std::vector<std::shared_ptr<Light>> lights;
+    // only one ambient colour per scene
     Vector3 ambientColour;
 
     void add_object(std::shared_ptr<Observable> object){
@@ -22,6 +40,7 @@ struct Scene{
     RayHit closest_intersection(Ray ray){
         RayHit intersection;
 
+        // go through each object and see if it intersects
         for(int i = 0; i < objects.size(); i++){
             std::shared_ptr<Observable> obj = objects[i];
             if(obj->intersect(ray, intersection)){

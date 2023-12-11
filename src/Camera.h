@@ -26,7 +26,8 @@ struct Camera{
         z_step_m = height_m / height_px;
     }
 
-    Ray castRay(int x, int z){
+    // return a ray through the pixel coordinate x, z
+    Ray cast_ray(int x, int z){
         float x_pos = (x_step_m - width_m) / 2 + x * x_step_m;
         float z_pos = (z_step_m + height_m) / 2 - z * z_step_m;
 

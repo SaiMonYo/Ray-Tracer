@@ -22,6 +22,7 @@ struct Renderer{
         world = s;
     }
 
+    // trace ray through scene and find information of intersection
     Vector3 trace(Ray& ray){
         RayHit closest = world.closest_intersection(ray);
 
@@ -35,12 +36,17 @@ struct Renderer{
         return illuminate(index, closest.point, closest.normal, ray.origin, closest.u, closest.v);
     }
 
+    // illuminate a point on an object
+    // using Blinn-Phong Shading model
     Vector3 illuminate(int index, Vector3 P, Vector3 N, Vector3 O, float u, float v){
-        Material mat = world.objects[index]->mat;
+        // colour of point to be returned
         Vector3 colour = Vector3(0,0,0);
+
+        Material mat = world.objects[index]->mat;
         Vector3 V = Vector3::normalize(O-P);
         Vector3 K_d = mat.K_d;
 
+        // if object has a diffuse texture sample it
         if (world.objects[index]->K_Atex->implemented){
             K_d = world.objects[index]->K_Atex->get_colour(u, v);
         }
@@ -48,8 +54,10 @@ struct Renderer{
         Vector3 I_a = world.ambientColour;
         int alpha = mat.N_s;
 
+        // ambient lighting
         colour += K_d * I_a;
 
+        // calculate diffuse and specular components for each light
         for (int i = 0; i < world.lights.size(); i++){
             std::shared_ptr<Light> light = world.lights[i];
             float dist = Vector3::length(light->position - P);
@@ -71,16 +79,21 @@ struct Renderer{
     }
 
     void render(){
+        // timer for render time
         auto start = std::chrono::high_resolution_clock::now();
         Camera cam = Camera(width, height);
 
+        // used for outputting the renders current %
         int tenpercent = height/10;
-
         std::cout << "Rendering..." << std::endl;
+
+        // iterate through the pixel coordinates
         for (int z = 0; z < height; z++){
             for (int x = 0; x < width; x++){
-                Ray r = cam.castRay(x,z);
+                // get the ray from the camera goinf through that coordinate
+                Ray r = cam.cast_ray(x,z);
                 Vector3 lin_rgb = trace(r);
+                // write value to file
                 out->write_pixel(lin_rgb*255);
             }
             if (z % tenpercent == 0){
@@ -88,8 +101,16 @@ struct Renderer{
             }
         }
         std::cout << "100% complete" << std::endl;
+        // output the render time
         auto end = std::chrono::high_resolution_clock::now();
-        std::cout << "Render time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
+        unsigned long long r_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        // less than 30s output ms, else seconds
+        if (r_time_ms < 30000){
+            std::cout << "Render time: " << r_time_ms << "ms" << std::endl;
+        }
+        else{
+            std::cout << "Render time: " << (r_time_ms / 1000) << "s" << std::endl;
+        }
     }
 
     Vector3 tonemap(Vector3 lin_rgb){

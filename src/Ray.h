@@ -10,6 +10,8 @@ struct Ray{
     Ray(Vector3 O, Vector3 D){
         origin = O;
         direction = D;
+        // inverse direction is used for AABB intersection
+        // cheaper to precompute
         inv_direction = Vector3::invert(D);
     }
 

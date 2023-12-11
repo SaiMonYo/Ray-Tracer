@@ -25,6 +25,7 @@ struct QOIWriter{
     int run_length = 0;
 
     QOIWriter(std::ofstream& file, int width, int height) : filestream(file){
+        // init attributes and write magic numbers and headers to file
         write32(0x716f6966);
         write32(width);
         write32(height);
@@ -32,6 +33,7 @@ struct QOIWriter{
         filestream << (unsigned char) 1;
     }
 
+    // write 32 bit number to the file
     void write32(long value){
         filestream << (unsigned char) ((value & 0xff000000) >> 24);
         filestream << (unsigned char) ((value & 0x00ff0000) >> 16);
@@ -41,9 +43,11 @@ struct QOIWriter{
 
 
     void write_pixel(Vector3 pixel){
+        // clamp pixel values between 0-255
         pixel = Vector3::apply(pixel, [](float a){return floorf(a);});
         pixel = Vector3::apply(pixel, [](float a){return fmax(0, fmin(a, 255));});
 
+        // run length encoding
         if (pixel == previous_colour){
             run_length++;
             if (run_length == 62){
@@ -120,6 +124,7 @@ struct QOIReader{
             std::cerr << "Invalid QOI file" << std::endl;
             return;
         }
+        // read in the magic numbers and headers
         width = read32();
         height = read32();
         channels = filestream.get();
@@ -127,34 +132,44 @@ struct QOIReader{
     }
 
     void read_all(std::vector<Vector3>& pixels){
+        // go through all the file
         while (!filestream.eof()){
+            // get the current byte
             uint8_t byte = filestream.get();
+            // no encoding
             if (byte == QOI_OP_RGB){
                 Vector3 pixel;
                 pixel.x = filestream.get();
                 pixel.y = filestream.get();
                 pixel.z = filestream.get();
                 pixels.push_back(pixel / 255.0);
+                // add current pixel to lookup
+                // and set previous colour to it
                 previous_colour = pixel;
                 int key = gen_key(pixel);
                 lookup[key] = pixel;
             }
+            // run of same pixels
             else if ((byte & 0xc0) == QOI_OP_RUN){
                 int run_length = (byte & 0x3f) + 1;
+                // add that many pixels to the vector
                 for (int i = 0; i < run_length; i++){
                     pixels.push_back(previous_colour / 255.0);
                 }
             }
+            // seen pixel in the buffer
             else if ((byte & 0xc0) == QOI_OP_INDEX){
                 int key = byte & 0x3f;
                 Vector3 pixel = lookup[key];
                 pixels.push_back(pixel / 255.0);
                 previous_colour = pixel;
             }
+            // small difference in r, g, b values
             else if ((byte & 0xc0) == QOI_OP_DIFF){
                 int dr = ((byte & 0x30) >> 4) - 2;
                 int dg = ((byte & 0x0c) >> 2) - 2;
                 int db = (byte & 0x03) - 2;
+                // should stay under 255 but mod just incase
                 previous_colour.x = int(previous_colour.x + dr) % 256;
                 previous_colour.y = int(previous_colour.y + dg) % 256;
                 previous_colour.z = int(previous_colour.z + db) % 256;
@@ -162,8 +177,11 @@ struct QOIReader{
                 int key = gen_key(previous_colour);
                 lookup[key] = previous_colour;
             }
+            // larger difference in Green channel
             else if ((byte & 0xc0) == QOI_OP_LUMA){
+                // get green difference
                 int dg = (byte & 0x3f) - 32;
+                // get next bit for R, B channel diffs
                 byte = filestream.get();
                 int dr_dg = ((byte & 0xf0) >> 4) - 8;
                 int db_dg = (byte & 0x0f) - 8;
@@ -176,8 +194,9 @@ struct QOIReader{
                 int key = gen_key(previous_colour);
                 lookup[key] = previous_colour;
             }
+            // unkown encoding / error in program
             else{
-                std::cout << std::hex << (int)byte << std::endl;
+                std::cerr << std::hex << (int)byte << std::endl;
             }
         }
     }

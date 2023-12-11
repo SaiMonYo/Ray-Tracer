@@ -17,6 +17,7 @@ struct Triangle{
     }
 };
 
+// moller trumbore algorithm
 bool ray_triangle(const Ray& ray, RayHit& inter, const Triangle& tri){
     triangle_count++;
     Vector3 v0 = tri.vertices[0];

@@ -261,7 +261,7 @@ struct TriangleMesh: public Observable{
         }
         bool in = false;
         bool hit = tree.intersection(ray, inter);
-        // check if all elements in possibleFaces are in faces
+        // check if we had a intersection of a triangle
         if (!hit){
             return false;
         }
