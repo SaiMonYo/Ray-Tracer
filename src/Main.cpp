@@ -7,8 +7,8 @@
 #include "TriangleMesh.h"
 
 std::string DEFAULT_OUTPUT = "images/result.qoi";
-int DEFAULT_WIDTH = 1080;
-int DEFAULT_HEIGHT = 2340;
+int DEFAULT_WIDTH = 1080*3;
+int DEFAULT_HEIGHT = 2340*3;
 
 int start(){
     std::ofstream output(DEFAULT_OUTPUT, std::ios::out|std::ios::binary);
@@ -91,7 +91,7 @@ void bust(){
     rhet->object_matrix = object_matrix;
     rhet->transform();
     rhet->K_Atex = std::make_shared<ImageTexture>("objs/rhetorican/source/retheur_-_LowPoly_u1_v1.qoi");
-    rhet->recalc_octree();
+    rhet->recalc_tree();
     world.add_object(rhet);
 
     world.ambientColour = Vector3::to_colour("#FFFFFF") * 0.3;

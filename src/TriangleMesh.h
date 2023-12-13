@@ -2,9 +2,12 @@
 
 #include "Ray.h"
 #include "Observable.h"
+#include "BVH.h"
 #include "OctreeRec.h"
 #include "Mat4.h"
 
+#define BUILD_OCTREE 0
+uint OCTREE_DEPTH = 7;
 
 std::string replace_slash(std::string str){
     std::string newStr = "";
@@ -27,7 +30,7 @@ struct TriangleMesh: public Observable{
     std::vector<std::vector<int>> faces;
     Mat4 object_matrix;
     Vector3 boundingBox[2];
-    Octree tree;
+    std::shared_ptr<SpaceTree> tree;
 
     TriangleMesh(const std::string& filename, Material material_){
         std::ifstream file(filename);
@@ -75,6 +78,7 @@ struct TriangleMesh: public Observable{
         std::cout << "vertices: " << vertices.size() << std::endl;
         std::cout << "normals: " << normals.size() << std::endl;
         std::cout << "texcoords: " << texcoords.size() << std::endl;
+        std::cout << "faces: " << faces.size() << std::endl;
         file.close();
         // calculate normals if they are not given
         recalc_bounding_box();
@@ -172,14 +176,22 @@ struct TriangleMesh: public Observable{
         }
         std::cout << "vmin: " << vmin << std::endl;
         std::cout << "vmax: " << vmax << std::endl;
-        Vector3 extend = (vmax - vmin) * 0.01;
-        boundingBox[0] = vmin - extend;
-        boundingBox[1] = vmax + extend;
+        boundingBox[0] = vmin;
+        boundingBox[1] = vmax;
     }
 
-    void recalc_octree(){
-        recalc_bounding_box();
-        tree = Octree(boundingBox, faces, vertices, 7);
+    void recalc_tree(){
+        std::vector<Triangle> triangles;
+        for (int i = 0; i < faces.size(); i++){
+            std::vector<int> face = faces[i];
+            Triangle tri = Triangle(vertices[face[0] - 1], vertices[face[3] - 1], vertices[face[6] - 1], i);
+            triangles.push_back(tri);
+        }
+#if BUILD_OCTREE
+        tree = std::make_shared<Octree>(boundingBox, faces, vertices, OCTREE_DEPTH);
+#else
+        tree = std::make_shared<BVH>(triangles);
+#endif
     }
 
     Vector3 get_centroid(){
@@ -222,11 +234,7 @@ struct TriangleMesh: public Observable{
     }
 
     bool intersect(Ray& ray, RayHit& inter){
-        if (AABBIntersection(boundingBox[0], boundingBox[1], ray) < 0){
-            return false;
-        }
-        bool in = false;
-        bool hit = tree.intersection(ray, inter);
+        bool hit = tree->intersection(ray, inter);
         // check if we had a intersection of a triangle
         if (!hit){
             return false;

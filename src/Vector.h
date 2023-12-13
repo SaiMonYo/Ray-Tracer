@@ -19,6 +19,26 @@ struct Vector3{
         float x, y, z;
     };
 
+	constexpr inline float& operator[](int ind){
+        if (ind == 0){
+			return x;
+		}
+		else if (ind == 1){
+			return y;
+		}
+		return z;
+    }
+
+    constexpr inline const float& operator[](int ind) const {
+        if (ind == 0){
+			return x;
+		}
+		else if (ind == 1){
+			return y;
+		}
+		return z;
+    }
+
     inline Vector3() : x(0.0f), y(0.0f), z(0.0f){}
 	inline Vector3(float f) : x(f), y(f), z(f){}
 	inline Vector3(float x, float y, float z) : x(x), y(y), z(z){}
@@ -96,6 +116,10 @@ struct Vector3{
 
 	inline static float max_component(const Vector3& v){
 		return fmax(fmax(v.x, v.y), v.z);
+	}
+
+	inline static Vector3 abs(const Vector3& v){
+		return Vector3(fabs(v.x), fabs(v.y), fabs(v.z));
 	}
 
 

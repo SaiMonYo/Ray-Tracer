@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Triangle.h"
 
 unsigned long long AABBIntersectionCount = 0;
@@ -16,6 +18,7 @@ inline float AABBIntersection(const Vector3& min, const Vector3& max, const Ray&
     return (t1 >= t0) ? (t0 > 0.f ? t0 : t1) : -1.0;
 }
 
+/*
 inline bool AABBIntersection(const Vector3& center, const Vector3& e, Triangle& tri){
     // crude AABB-triangle intersection
     // creates a bounding box around triangle and checks for intersection with AABB
@@ -38,4 +41,132 @@ inline bool AABBIntersection(const Vector3& center, const Vector3& e, Triangle& 
     float s = Vector3::dot(normal, (center - v0));
 
     return (fabs(r) > s);
+}*/
+
+// https://github.com/juj/MathGeoLib/blob/master/src/Geometry/Triangle.cpp#L715
+inline bool AABBIntersection(const Vector3& cent, const Vector3& e, Triangle& tri){
+/** The AABB-Triangle test implementation is based on the pseudo-code in
+	Christer Ericson's Real-Time Collision Detection, pp. 169-172. It is
+	practically a standard SAT test. */
+    Vector3 a = tri.vertices[0];
+    Vector3 b = tri.vertices[1];
+    Vector3 c = tri.vertices[2];
+	Vector3 tMin = Vector3::min(Vector3::min(a, b), c);
+	Vector3 tMax = Vector3::max(Vector3::max(a, b), c);
+
+    Vector3 minPoint = cent - e;
+    Vector3 maxPoint = cent + e;
+
+	if (tMin.x >= maxPoint.x || tMax.x <= minPoint.x
+		|| tMin.y >= maxPoint.y || tMax.y <= minPoint.y
+		|| tMin.z >= maxPoint.z || tMax.z <= minPoint.z)
+		return false;
+
+	Vector3 center = (minPoint + maxPoint) * 0.5f;
+	Vector3 h = maxPoint - center;
+
+	const Vector3 t[3] = { b-a, c-a, c-b };
+
+	Vector3 ac = a-center;
+
+	Vector3 n = Vector3::cross(t[0], t[1]);
+	float s = Vector3::dot(n, ac);
+    float r = fabs(Vector3::dot(Vector3::abs(n), h));
+	if (fabs(s) >= r)
+		return false;
+
+	const Vector3 at[3] = {Vector3::abs(t[0]), Vector3::abs(t[1]), Vector3::abs(t[2]) };
+
+	Vector3 bc = b-center;
+	Vector3 cc = c-center;
+
+	// SAT test all cross-axes.
+	// The following is a fully unrolled loop of this code, stored here for reference:
+	/*
+	float d1, d2, a1, a2;
+	const Vector3 e[3] = { DIR_VEC(1, 0, 0), DIR_VEC(0, 1, 0), DIR_VEC(0, 0, 1) };
+	for(int i = 0; i < 3; ++i)
+		for(int j = 0; j < 3; ++j)
+		{
+			Vector3 axis = Cross(e[i], t[j]);
+			ProjectToAxis(axis, d1, d2);
+			aabb.ProjectToAxis(axis, a1, a2);
+			if (d2 <= a1 || d1 >= a2) return false;
+		}
+	*/
+
+	// eX <cross> t[0]
+	float d1 = t[0].y * ac.z - t[0].z * ac.y;
+	float d2 = t[0].y * cc.z - t[0].z * cc.y;
+	float tc = (d1 + d2) * 0.5f;
+	r = fabs(h.y * at[0].z + h.z * at[0].y);
+	if (r + fabs(tc - d1) < fabs(tc))
+		return false;
+
+	// eX <cross> t[1]
+	d1 = t[1].y * ac.z - t[1].z * ac.y;
+	d2 = t[1].y * bc.z - t[1].z * bc.y;
+	tc = (d1 + d2) * 0.5f;
+	r = fabs(h.y * at[1].z + h.z * at[1].y);
+	if (r + fabs(tc - d1) < fabs(tc))
+		return false;
+
+	// eX <cross> t[2]
+	d1 = t[2].y * ac.z - t[2].z * ac.y;
+	d2 = t[2].y * bc.z - t[2].z * bc.y;
+	tc = (d1 + d2) * 0.5f;
+	r = fabs(h.y * at[2].z + h.z * at[2].y);
+	if (r + fabs(tc - d1) < fabs(tc))
+		return false;
+
+	// eY <cross> t[0]
+	d1 = t[0].z * ac.x - t[0].x * ac.z;
+	d2 = t[0].z * cc.x - t[0].x * cc.z;
+	tc = (d1 + d2) * 0.5f;
+	r = fabs(h.x * at[0].z + h.z * at[0].x);
+	if (r + fabs(tc - d1) < fabs(tc))
+		return false;
+
+	// eY <cross> t[1]
+	d1 = t[1].z * ac.x - t[1].x * ac.z;
+	d2 = t[1].z * bc.x - t[1].x * bc.z;
+	tc = (d1 + d2) * 0.5f;
+	r = fabs(h.x * at[1].z + h.z * at[1].x);
+	if (r + fabs(tc - d1) < fabs(tc))
+		return false;
+
+	// eY <cross> t[2]
+	d1 = t[2].z * ac.x - t[2].x * ac.z;
+	d2 = t[2].z * bc.x - t[2].x * bc.z;
+	tc = (d1 + d2) * 0.5f;
+	r = fabs(h.x * at[2].z + h.z * at[2].x);
+	if (r + fabs(tc - d1) < fabs(tc))
+		return false;
+
+	// eZ <cross> t[0]
+	d1 = t[0].x * ac.y - t[0].y * ac.x;
+	d2 = t[0].x * cc.y - t[0].y * cc.x;
+	tc = (d1 + d2) * 0.5f;
+	r = fabs(h.y * at[0].x + h.x * at[0].y);
+	if (r + fabs(tc - d1) < fabs(tc))
+		return false;
+
+	// eZ <cross> t[1]
+	d1 = t[1].x * ac.y - t[1].y * ac.x;
+	d2 = t[1].x * bc.y - t[1].y * bc.x;
+	tc = (d1 + d2) * 0.5f;
+	r = fabs(h.y * at[1].x + h.x * at[1].y);
+	if (r + fabs(tc - d1) < fabs(tc))
+		return false;
+
+	// eZ <cross> t[2]
+	d1 = t[2].x * ac.y - t[2].y * ac.x;
+	d2 = t[2].x * bc.y - t[2].y * bc.x;
+	tc = (d1 + d2) * 0.5f;
+	r = fabs(h.y * at[2].x + h.x * at[2].y);
+	if (r + fabs(tc - d1) < fabs(tc))
+		return false;
+
+	// No separating axis exists, the AABB and triangle intersect.
+	return true;
 }

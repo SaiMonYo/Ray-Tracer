@@ -7,12 +7,14 @@ unsigned long long triangle_count = 0;
 
 struct Triangle{
     Vector3 vertices[3];
+    Vector3 centroid;
     int face_index;
 
     Triangle(Vector3 v0, Vector3 v1, Vector3 v2, int index){
         vertices[0] = v0;
         vertices[1] = v1;
         vertices[2] = v2;
+        centroid = (v0 + v1 + v2) / 3.0;
         face_index = index;
     }
 };
