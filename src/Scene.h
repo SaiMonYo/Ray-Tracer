@@ -5,6 +5,7 @@
 #include <vector>
 #include "Light.h"
 #include "RayHit.h"
+#include "Camera.h"
 
 
 
@@ -28,6 +29,7 @@ struct Scene{
     std::vector<std::shared_ptr<Light>> lights;
     // only one ambient colour per scene
     Vector3 ambientColour;
+    Camera cam;
 
     void add_object(std::shared_ptr<Observable> object){
         objects.push_back(object);
@@ -35,6 +37,10 @@ struct Scene{
 
     void add_light(std::shared_ptr<Light> light){
         lights.push_back(light);
+    }
+
+    void setup_camera(int width, int height){
+        cam.set_screensize(width, height);
     }
 
     RayHit closest_intersection(Ray ray){

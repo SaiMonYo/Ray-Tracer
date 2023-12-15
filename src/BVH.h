@@ -170,8 +170,9 @@ struct BVH: public SpaceTree{
         if (node.tri_count > 2 || min_cost < leaf_cost){
             float split = nodes_box.min[axis] + extents[axis] * (min_cost_split + 1) / nbuckets;
 
-            uint i = node.first_index;
-            uint j = i + node.tri_count - 1;
+            // cant use uints here as j may dip below 0
+            int i = node.first_index;
+            int j = i + node.tri_count - 1;
 
             while (i <= j){
                 if (triangles[indices[i]].centroid[axis] < split){

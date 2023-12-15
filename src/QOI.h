@@ -94,6 +94,13 @@ struct QOIWriter{
         }
         previous_colour = pixel;
     }
+
+    void finish_run(){
+        // write any remaining run length
+        if (run_length > 0){
+            filestream << (unsigned char) (QOI_OP_RUN | (run_length - 1));
+        }
+    }
 };
 
 

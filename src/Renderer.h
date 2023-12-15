@@ -20,6 +20,7 @@ struct Renderer{
         width = w;
         height = h;
         world = s;
+        world.setup_camera(width, height);
     }
 
     // trace ray through scene and find information of intersection
@@ -81,7 +82,6 @@ struct Renderer{
     void render(){
         // timer for render time
         auto start = std::chrono::high_resolution_clock::now();
-        Camera cam = Camera(width, height);
 
         // used for outputting the renders current %
         int tenpercent = height/10;
@@ -91,7 +91,7 @@ struct Renderer{
         for (int z = 0; z < height; z++){
             for (int x = 0; x < width; x++){
                 // get the ray from the camera goinf through that coordinate
-                Ray r = cam.cast_ray(x,z);
+                Ray r = world.cam.cast_ray(x,z);
                 Vector3 lin_rgb = trace(r);
                 // write value to file
                 out->write_pixel(lin_rgb*255);
@@ -100,6 +100,8 @@ struct Renderer{
                 std::cout << (100.0*z)/(height) << "% complete" << std::endl;
             }
         }
+        out->finish_run();
+
         std::cout << "100% complete" << std::endl;
         // output the render time
         auto end = std::chrono::high_resolution_clock::now();
