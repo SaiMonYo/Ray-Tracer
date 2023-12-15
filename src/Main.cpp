@@ -7,8 +7,8 @@
 #include "TriangleMesh.h"
 
 std::string DEFAULT_OUTPUT = "images/result.qoi";
-int DEFAULT_WIDTH = 1080*3;
-int DEFAULT_HEIGHT = 2340*3;
+int DEFAULT_WIDTH = 1080;
+int DEFAULT_HEIGHT = 2340;
 
 int start(){
     std::ofstream output(DEFAULT_OUTPUT, std::ios::out|std::ios::binary);

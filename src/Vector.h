@@ -3,6 +3,8 @@
 #include <string>
 
 
+#define FINF 1e30f
+
 const float EPSILON = 0.00001;
 uint32_t state = 727;
 
@@ -19,7 +21,7 @@ struct Vector3{
         float x, y, z;
     };
 
-	constexpr inline float& operator[](int ind){
+	inline float& operator[](int ind){
         if (ind == 0){
 			return x;
 		}
@@ -29,7 +31,7 @@ struct Vector3{
 		return z;
     }
 
-    constexpr inline const float& operator[](int ind) const {
+    inline const float& operator[](int ind) const {
         if (ind == 0){
 			return x;
 		}

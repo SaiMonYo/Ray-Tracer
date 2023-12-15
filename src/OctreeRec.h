@@ -7,7 +7,7 @@
 #include <set>
 
 struct OctreeNode{
-    Vector3 box[2];
+    AABB box;
     Vector3 center;
     Vector3 extents;
     std::vector<OctreeNode> children;
@@ -83,8 +83,8 @@ struct OctreeNode{
 
     bool intersection(Ray ray, RayHit& inter){
         bool hit = false;
-        float t = AABBIntersection(box[0], box[1], ray);
-        if (t > 0 && AABBIntersection(box[0], box[1], ray) < inter.distance){
+        float t = AABBIntersection(box, ray);
+        if (t != FINF && AABBIntersection(box, ray) < inter.distance){
             // at bottom if no children
             if (children.size() == 0){
                 // intersect triangles
@@ -147,7 +147,7 @@ struct Octree: public SpaceTree{
 
     bool intersection(const Ray& ray, RayHit& inter){
         // doesn't intersect with root nodes bounding box
-        if (AABBIntersection(root.box[0], root.box[1], ray) < 0){
+        if (AABBIntersection(root.box, ray) == FINF){
             // return empty array
             return false;
         }

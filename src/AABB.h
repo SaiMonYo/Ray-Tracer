@@ -4,8 +4,71 @@
 
 unsigned long long AABBIntersectionCount = 0;
 
-inline float AABBIntersection(const Vector3& min, const Vector3& max, const Ray& ray){
+struct AABB{
+	Vector3 min, max;
+
+	AABB(){
+		min = Vector3(1e8f);
+		max = Vector3(-1e8f);
+	}
+
+	constexpr inline Vector3& operator[](int ind){
+        if (ind == 0){
+			return min;
+		}
+		return max;
+    }
+
+    constexpr inline const Vector3& operator[](int ind) const {
+        if (ind == 0){
+			return min;
+		}
+		return max;
+    }
+
+	void fix(Triangle& tri){
+		for (int i = 0; i < 3; i++){
+			min = Vector3::min(min, tri.vertices[i]);
+			max = Vector3::max(max, tri.vertices[i]);
+		}
+	}
+
+	void fix(AABB& box){
+		min = Vector3::min(min, box.min);
+		max = Vector3::max(max, box.max);
+	}
+
+	void fix(Vector3& v){
+		min = Vector3::min(min, v);
+		max = Vector3::max(max, v);
+	}
+	
+	float area(){
+		Vector3 e = max - min;
+		return 2.0f * (e.x * e.y + e.x * e.z + e.y * e.z);
+	}
+
+	Vector3 extents(){
+		return max - min;
+	}
+
+	Vector3 center(){
+		return (min + max) * 0.5f;
+	}
+
+	Vector3 offset(Vector3& p){
+		Vector3 o = p - min;
+		if (max.x > min.x) o.x /= max.x - min.x;
+		if (max.y > min.y) o.y /= max.y - min.y;
+		if (max.z > min.z) o.z /= max.z - min.z;
+		return o;
+	}
+};
+
+inline float AABBIntersection(const AABB& aabb, const Ray& ray){
     AABBIntersectionCount++;
+	Vector3 min = aabb.min;
+	Vector3 max = aabb.max;
     // ray AABB intersection using Nvidia's ray slab intersection algorithm
     Vector3 f = (min - ray.origin) * ray.inv_direction;
     Vector3 n = (max - ray.origin) * ray.inv_direction;
@@ -15,7 +78,7 @@ inline float AABBIntersection(const Vector3& min, const Vector3& max, const Ray&
     float t1 = Vector3::min_component(tmax);
     float t0 = Vector3::max_component(tmin);
 
-    return (t1 >= t0) ? (t0 > 0.f ? t0 : t1) : -1.0;
+    return (t1 >= t0) ? (t0 > 0.f ? t0 : t1) : FINF;
 }
 
 /*
