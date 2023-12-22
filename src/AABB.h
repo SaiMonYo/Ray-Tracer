@@ -65,6 +65,7 @@ struct AABB{
 	}
 };
 
+/*
 inline float AABBIntersection(const AABB& aabb, const Ray& ray){
     AABBIntersectionCount++;
 	Vector3 min = aabb.min;
@@ -78,7 +79,22 @@ inline float AABBIntersection(const AABB& aabb, const Ray& ray){
     float t1 = Vector3::min_component(tmax);
     float t0 = Vector3::max_component(tmin);
 
-    return (t1 >= t0) ? (t0 > 0.f ? t0 : t1) : FINF;
+    return (t1 >= t0) ? (t0 != FINF ? t0 : t1) : FINF;
+}
+*/
+
+
+inline float AABBIntersection(const AABB& aabb, const Ray& ray){
+	AABBIntersectionCount++;
+	Vector3 bmin = aabb.min;
+	Vector3 bmax = aabb.max;
+    float tx1 = (bmin.x-ray.origin.x) * ray.inv_direction.x, tx2 = (bmax.x-ray.origin.x) * ray.inv_direction.x;
+    float tmin = fmin( tx1, tx2 ), tmax = fmax( tx1, tx2 );
+    float ty1 = (bmin.y-ray.origin.y) * ray.inv_direction.y, ty2 = (bmax.y-ray.origin.y) * ray.inv_direction.y;
+    tmin = fmax( tmin, fmin( ty1, ty2 ) ), tmax = fmin( tmax, fmax( ty1, ty2 ) );
+    float tz1 = (bmin.z-ray.origin.z) * ray.inv_direction.z, tz2 = (bmax.z-ray.origin.z) * ray.inv_direction.z;
+    tmin = fmax( tmin, fmin( tz1, tz2 ) ), tmax = fmin( tmax, fmax( tz1, tz2 ) );
+    if (tmax >= tmin && tmax > 0) return tmin; else return 1e30f;
 }
 
 /*

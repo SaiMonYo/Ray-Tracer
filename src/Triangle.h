@@ -29,9 +29,6 @@ bool ray_triangle(const Ray& ray, RayHit& inter, const Triangle& tri){
     Vector3 v0v2 = v2 - v0;
     Vector3 pvec = Vector3::cross(ray.direction, v0v2);
     float det = Vector3::dot(v0v1,pvec);
-    if (std::fabs(det) < EPSILON){
-        return false;
-    }
 
     float invdet = 1.0 / det;
     Vector3 tvec = ray.origin - v0;

@@ -224,7 +224,12 @@ def png_to_qoi(png_file_name, qoi_file_name):
         qoi.write(b'\x01')
         for y in range(height):
             for x in range(width):
-                r, g, b = pixels[x, y]
+                if type(pixels[x, y]) == int:
+                    r = g = b = pixels[x, y]
+                elif len(pixels[x, y]) == 3:
+                    r, g, b = pixels[x, y]
+                else:
+                    r, g, b, _ = pixels[x, y]
                 current = Colour(r, g, b)
                 # run length encoding
                 if current == previous:

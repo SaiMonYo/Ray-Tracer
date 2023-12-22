@@ -5,7 +5,7 @@
 
 #define FINF 1e30f
 
-const float EPSILON = 0.00001;
+const float EPSILON = 0.000001;
 uint32_t state = 727;
 
 float random_value(){

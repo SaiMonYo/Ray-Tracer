@@ -4,6 +4,11 @@
 *.qoi
 *.txt
 *.png
+*.mp4
 images/result.png
+images/test
+compression/__pycache__/
 objs/
 test.py
+t.py
+t2.py

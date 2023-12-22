@@ -1,7 +1,7 @@
 #pragma once
 
 #include "AABB.h"
-#include "SpaceTree.h"
+#include "Triangle.h"
 #include <iostream>
 #include <vector>
 #include <set>
@@ -114,7 +114,7 @@ struct OctreeNode{
     }
 };
 
-struct Octree: public SpaceTree{
+struct Octree: public Observable{
     uint8_t depth;
     Vector3 box[2];
     std::vector<Vector3> vertices;

@@ -1,6 +1,8 @@
 #pragma once
 
-#include "SpaceTree.h"
+#include "Observable.h"
+#include "AABB.h"
+#include "Triangle.h"
 
 #define REC_INTERSECTION 0
 
@@ -24,7 +26,7 @@ struct BVHSplitBucket{
 };
 
 
-struct BVH: public SpaceTree{
+struct BVH: public Observable{
     std::vector<BVHNode> nodes;
     std::vector<Triangle> triangles;
     std::vector<int> indices;
@@ -225,7 +227,7 @@ struct BVH: public SpaceTree{
         return hit;
     }
 
-    bool intersection(const Ray& ray, RayHit& inter){
+    bool intersect(const Ray& ray, RayHit& inter){
         bool hit = false;
         float t = AABBIntersection(nodes[root_index].aabb, ray);
         if (t > 0 && t < inter.distance){
@@ -234,7 +236,7 @@ struct BVH: public SpaceTree{
         return hit;
     }
 #else
-    bool intersection(const Ray& ray, RayHit& inter){
+    bool intersect(Ray& ray, RayHit& inter){
         if (AABBIntersection(nodes[root_index].aabb, ray) == FINF){
             return false;
         }

@@ -30,7 +30,7 @@ struct TriangleMesh: public Observable{
     std::vector<std::vector<int>> faces;
     Mat4 object_matrix;
     Vector3 boundingBox[2];
-    std::shared_ptr<SpaceTree> tree;
+    std::shared_ptr<Observable> tree;
 
     TriangleMesh(const std::string& filename, Material material_){
         std::ifstream file(filename);
@@ -234,7 +234,7 @@ struct TriangleMesh: public Observable{
     }
 
     bool intersect(Ray& ray, RayHit& inter){
-        bool hit = tree->intersection(ray, inter);
+        bool hit = tree->intersect(ray, inter);
         // check if we had a intersection of a triangle
         if (!hit){
             return false;

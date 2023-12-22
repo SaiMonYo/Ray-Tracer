@@ -6,6 +6,7 @@
 #include "Texture.h"
 #include <memory>
 
+#define uint unsigned int
 
 
 struct Observable{

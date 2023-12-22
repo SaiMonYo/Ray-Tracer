@@ -141,6 +141,5 @@ int main(){
     //test();
     //start();
     //wd40();
-    //bust();
-    jinx();
+    bust();
 }

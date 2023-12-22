@@ -37,9 +37,6 @@ struct Camera{
 
         x_step_m = width_m / width_px;
         z_step_m = height_m / height_px;
-
-        std::cout << "width: " << width_m << std::endl;
-        std::cout << "x_step: " << x_step_m << std::endl;
     }
 
     void setup(Vector3 pos, Vector3 target){
@@ -54,17 +51,21 @@ struct Camera{
     void look_at(Vector3 target){
         pivot = target;
         Vector3 direction = Vector3::normalize(target - position);
-        float pitch = MathUtils::to_degrees(asin(direction.z));
-        float yaw = MathUtils::to_degrees(atan2(direction.y, direction.x));
+        // float pitch = asin(direction.z);
+        // float yaw = atan2(direction.y, direction.x);
 
-        Vector3 temp_forward;
-        temp_forward.x = cos(MathUtils::to_radians(pitch)) * cos(MathUtils::to_radians(yaw));
-        temp_forward.y = sin(MathUtils::to_radians(yaw)) * cos(MathUtils::to_radians(pitch));
-        temp_forward.z = sin(MathUtils::to_radians(pitch));
+        // Vector3 temp_forward;
+        // temp_forward.x = cos(pitch) * cos(yaw);
+        // temp_forward.y = sin(yaw) * cos(pitch);
+        // temp_forward.z = sin(pitch);
 
-        forward = Vector3::normalize(temp_forward);
+        forward = direction;
         right = Vector3::normalize(Vector3::cross(forward, Vector3(0,0,1)));
         up = Vector3::normalize(Vector3::cross(right, forward));
+
+        std::cout << "forward: " << position + forward << std::endl;
+        std::cout << "right: " << position + right << std::endl;
+        std::cout << "up: " << position + up << std::endl;
     }
 
     // return a ray through the pixel coordinate x, z

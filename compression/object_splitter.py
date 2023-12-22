@@ -5,9 +5,10 @@ def ints(line):
     return list(map(int, re.findall(r"(\d+)", line)))
 
 def split(filename): 
-    filepath = filename.rsplit("/", 1)[0]
+    filepath = filename.rsplit("/", 1)[0] + "/"
     vertices = {"v": [], "vn": [], "vt": []}
     objects = {}
+    extra_info = {}
     obj_file = open(filename, "r")
     current_object = ""
     for line in obj_file:
@@ -20,6 +21,11 @@ def split(filename):
                 vertices[start].append(line)
             elif start == "f":
                 objects[current_object].append(line)
+            else:
+                if current_object not in extra_info:
+                    extra_info[current_object] = []
+                else:
+                    extra_info[current_object].append(line) 
     obj_file.close()
     
     for object_name in objects:
@@ -55,6 +61,8 @@ def split(filename):
             maps["vn"][unique_vns[i]] = i + 1
         
         with open(filepath + object_name + ".obj", "w") as f:
+            for line in extra_info[object_name]:
+                f.write(line)
             for vertex in unique_vs:
                 f.write(vertices["v"][vertex - 1])
             for vertex in unique_vts:
