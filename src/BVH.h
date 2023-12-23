@@ -8,14 +8,14 @@
 
 struct BVHNode{
     AABB aabb;
-    uint left_child, first_index, tri_count;
-    bool is_leaf(){return tri_count > 0;}
+    uint left_child, first_index, observable_count;
+    bool is_leaf(){return observable_count > 0;}
 
     BVHNode(){
         aabb = AABB();
         left_child = -1;
         first_index = -1;
-        tri_count = 0;
+        observable_count = 0;
     }
 };
 
@@ -28,31 +28,38 @@ struct BVHSplitBucket{
 
 struct BVH: public Observable{
     std::vector<BVHNode> nodes;
-    std::vector<Triangle> triangles;
+    std::vector<std::shared_ptr<Observable>> observables;
     std::vector<int> indices;
 
     uint root_index;
     uint nodes_used;
     uint N;
 
+    Vector3 min_vertex(){
+        return nodes[root_index].aabb.min;
+    }
+
+    Vector3 max_vertex(){
+        return nodes[root_index].aabb.max;
+    }
+
+    Vector3 centroid(){
+        return nodes[root_index].aabb.center();
+    }
+
     BVH(){
         root_index = 0;
         nodes_used = 1;
     }
 
-    BVH(std::vector<Triangle>& tris){
-        triangles = tris;
-        N = triangles.size();
+    BVH(std::vector<std::shared_ptr<Observable>>& obs){
+        observables = obs;
+        N = observables.size();
         indices.resize(N);
         for (int i = 0; i < N; i++){
             indices[i] = i;
         }
         nodes.resize(N * 2 - 1);
-        for (int i = 0; i < N; i++){
-            Vector3 v0 = triangles[i].vertices[0];
-            Vector3 v1 = triangles[i].vertices[1];
-            Vector3 v2 = triangles[i].vertices[2];
-        }
         root_index = 0;
         nodes_used = 1;
         build();
@@ -61,7 +68,7 @@ struct BVH: public Observable{
     void build(){
         BVHNode& root = nodes[root_index];
         root.first_index = 0;
-        root.tri_count = N;
+        root.observable_count = N;
         refit_node(root_index);
         sah_divide(root_index);
     }
@@ -73,15 +80,15 @@ struct BVH: public Observable{
         box.min = Vector3(1e8f);
         box.max = Vector3(-1e8f);
         uint first = node.first_index;
-        for (uint i = 0; i < node.tri_count; i++){
-            Triangle& tri = triangles[indices[first + i]];
-            box.fix(tri);
+        for (uint i = 0; i < node.observable_count; i++){
+            std::shared_ptr<Observable> obs = observables[indices[first + i]];
+            box.fix(obs);
         }
     }
 
     void basic_divide(uint ind){
         BVHNode& node = nodes[ind];
-        if (node.tri_count <= 2){
+        if (node.observable_count <= 2){
             return;
         }
         AABB& box = node.aabb;
@@ -92,10 +99,10 @@ struct BVH: public Observable{
 
         float split = box.min[axis] + extents[axis] * 0.5f;
         uint i = node.first_index;
-        uint j = i + node.tri_count - 1;
+        uint j = i + node.observable_count - 1;
 
         while (i <= j){
-            if (triangles[indices[i]].centroid[axis] < split){
+            if (observables[indices[i]]->centroid()[axis] < split){
                 i++;
             }
             else{
@@ -105,17 +112,17 @@ struct BVH: public Observable{
         }
 
         uint left_count = i - node.first_index;
-        if (left_count == 0 || left_count == node.tri_count){
+        if (left_count == 0 || left_count == node.observable_count){
             return;
         }
         uint left_ind = nodes_used++;
         uint right_ind = nodes_used++;
         nodes[left_ind].first_index = node.first_index;
-        nodes[left_ind].tri_count = left_count;
+        nodes[left_ind].observable_count = left_count;
         nodes[right_ind].first_index = i;
-        nodes[right_ind].tri_count = node.tri_count - left_count;
+        nodes[right_ind].observable_count = node.observable_count - left_count;
         node.left_child = left_ind;
-        node.tri_count = 0;
+        node.observable_count = 0;
         refit_node(left_ind);
         refit_node(right_ind);
 
@@ -125,7 +132,7 @@ struct BVH: public Observable{
 
     void sah_divide(uint ind){
         BVHNode& node = nodes[ind];
-        if (node.tri_count <= 2){
+        if (node.observable_count <= 2){
             return;
         }
         constexpr int nbuckets = 20;
@@ -137,11 +144,11 @@ struct BVH: public Observable{
         if (extents.y > extents.x) axis = 1;
         if (extents.z > extents[axis]) axis = 2;
 
-        for (uint i = 0; i < node.tri_count; i++){
-            int b = nbuckets * nodes_box.offset(triangles[indices[node.first_index + i]].centroid)[axis];
+        for (uint i = 0; i < node.observable_count; i++){
+            int b = nbuckets * nodes_box.offset(observables[indices[node.first_index + i]]->centroid())[axis];
             if (b == nbuckets) b = nbuckets - 1;
             buckets[b].count++;
-            buckets[b].box.fix(triangles[indices[node.first_index + i]]);
+            buckets[b].box.fix(observables[indices[node.first_index + i]]);
         }
 
         constexpr int nsplits = nbuckets - 1;
@@ -168,16 +175,16 @@ struct BVH: public Observable{
             }
         }
 
-        float leaf_cost = node.tri_count;
-        if (node.tri_count > 2 || min_cost < leaf_cost){
+        float leaf_cost = node.observable_count;
+        if (node.observable_count > 2 || min_cost < leaf_cost){
             float split = nodes_box.min[axis] + extents[axis] * (min_cost_split + 1) / nbuckets;
 
             // cant use uints here as j may dip below 0
             int i = node.first_index;
-            int j = i + node.tri_count - 1;
+            int j = i + node.observable_count - 1;
 
             while (i <= j){
-                if (triangles[indices[i]].centroid[axis] < split){
+                if (observables[indices[i]]->centroid()[axis] < split){
                     i++;
                 }
                 else{
@@ -187,17 +194,17 @@ struct BVH: public Observable{
             }
 
             uint left_count = i - node.first_index;
-            if (left_count == 0 || left_count == node.tri_count){
+            if (left_count == 0 || left_count == node.observable_count){
                 return;
             }
             uint left_ind = nodes_used++;
             uint right_ind = nodes_used++;
             nodes[left_ind].first_index = node.first_index;
-            nodes[left_ind].tri_count = left_count;
+            nodes[left_ind].observable_count = left_count;
             nodes[right_ind].first_index = i;
-            nodes[right_ind].tri_count = node.tri_count - left_count;
+            nodes[right_ind].observable_count = node.observable_count - left_count;
             node.left_child = left_ind;
-            node.tri_count = 0;
+            node.observable_count = 0;
             refit_node(left_ind);
             refit_node(right_ind);
 
@@ -215,8 +222,8 @@ struct BVH: public Observable{
             return false;
         }
         if (node.is_leaf()){
-            for (uint i = 0; i < node.tri_count; i++){
-                Triangle& tri = triangles[indices[node.first_index + i]];
+            for (uint i = 0; i < node.observable_count; i++){
+                Triangle& tri = observables[indices[node.first_index + i]];
                 hit |= ray_triangle(ray, inter, tri);
             }
         }
@@ -246,9 +253,9 @@ struct BVH: public Observable{
         while (true){
             if (node->is_leaf()){
                 uint first = node->first_index;
-                for (uint i = 0; i < node->tri_count; i++){
-                    Triangle& tri = triangles[indices[first + i]];
-                    hit |= ray_triangle(ray, inter, tri);
+                for (uint i = 0; i < node->observable_count; i++){
+                    std::shared_ptr<Observable>& obs = observables[indices[first + i]];
+                    hit |= obs->intersect(ray, inter);
                 }
                 if (stack_ptr == 0){
                     break;

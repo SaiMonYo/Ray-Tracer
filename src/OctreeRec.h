@@ -89,7 +89,7 @@ struct OctreeNode{
             if (children.size() == 0){
                 // intersect triangles
                 for (auto& tri: faces){
-                    hit |= ray_triangle(ray, inter, tri);
+                    hit |= tri.intersect(ray, inter);
                 }
                 return hit;
             }

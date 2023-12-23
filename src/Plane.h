@@ -1,9 +1,10 @@
 #include "Observable.h"
 
 
-struct Plane: Observable{
+struct Plane{
     Vector3 normal;
     Vector3 point;
+    Material mat;
 
     Plane(Vector3 P, Vector3 N, Vector3 c){
         normal = N;

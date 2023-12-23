@@ -181,11 +181,11 @@ struct TriangleMesh: public Observable{
     }
 
     void recalc_tree(){
-        std::vector<Triangle> triangles;
+        std::vector<std::shared_ptr<Observable>> triangles;
         for (int i = 0; i < faces.size(); i++){
             std::vector<int> face = faces[i];
             Triangle tri = Triangle(vertices[face[0] - 1], vertices[face[3] - 1], vertices[face[6] - 1], i);
-            triangles.push_back(tri);
+            triangles.push_back(std::make_shared<Triangle>(tri));
         }
 #if BUILD_OCTREE
         tree = std::make_shared<Octree>(boundingBox, faces, vertices, OCTREE_DEPTH);
@@ -194,21 +194,16 @@ struct TriangleMesh: public Observable{
 #endif
     }
 
-    Vector3 get_centroid(){
-        Vector3 centroid = Vector3(0,0,0);
-        for (const auto& v : vertices){
-            centroid += v;
-        }
-        centroid / vertices.size();
-        return centroid / vertices.size();
+    Vector3 centroid(){
+        return (boundingBox[1] + boundingBox[0]) * 0.5f;
     }
 
-    void center(){
-        Vector3 cent = (boundingBox[1] + boundingBox[0]) * 0.5f;
-        for (int i = 0; i < vertices.size(); i++){
-            vertices[i] -= cent;
-        }
-        recalc_bounding_box();
+    Vector3 max_vertex(){
+        return boundingBox[1];
+    }
+
+    Vector3 min_vertex(){
+        return boundingBox[0];
     }
 
     void transform(){

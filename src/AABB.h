@@ -26,21 +26,16 @@ struct AABB{
 		return max;
     }
 
-	void fix(Triangle& tri){
-		for (int i = 0; i < 3; i++){
-			min = Vector3::min(min, tri.vertices[i]);
-			max = Vector3::max(max, tri.vertices[i]);
-		}
+	void fix(std::shared_ptr<Observable> obs){
+		Vector3 v0 = obs->min_vertex();
+		Vector3 v1 = obs->max_vertex();
+		min = Vector3::min(min, v0);
+		max = Vector3::max(max, v1);
 	}
 
 	void fix(AABB& box){
 		min = Vector3::min(min, box.min);
 		max = Vector3::max(max, box.max);
-	}
-
-	void fix(Vector3& v){
-		min = Vector3::min(min, v);
-		max = Vector3::max(max, v);
 	}
 	
 	float area(){
@@ -56,7 +51,7 @@ struct AABB{
 		return (min + max) * 0.5f;
 	}
 
-	Vector3 offset(Vector3& p){
+	Vector3 offset(Vector3 p){
 		Vector3 o = p - min;
 		if (max.x > min.x) o.x /= max.x - min.x;
 		if (max.y > min.y) o.y /= max.y - min.y;

@@ -7,6 +7,18 @@ struct Sphere: Observable{
     Vector3 centre;
     float radius;
 
+    Vector3 max_vertex(){
+        return centre + Vector3(radius);
+    }
+
+    Vector3 min_vertex(){
+        return centre - Vector3(radius);
+    }
+
+    Vector3 centroid(){
+        return centre;
+    }
+
     Sphere(Vector3 O, float r, Vector3 c){
         centre = O;
         radius = r;
