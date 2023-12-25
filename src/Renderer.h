@@ -28,32 +28,31 @@ struct Renderer{
         RayHit closest = world.closest_intersection(ray);
 
         int index = closest.index;
-        if (index < 0){
+        if (closest.distance == FINF){
             return Vector3(0);
         }
 
         //ray.origin = closest.point + closest.normal * EPSILON;
         //ray.direction = random_hemisphere_vector(closest.normal);
-        return illuminate(index, closest.point, closest.normal, ray.origin, closest.u, closest.v);
+        return illuminate(closest.mat, closest.point, closest.normal, ray.origin, closest.u, closest.v);
     }
 
     // illuminate a point on an object
     // using Blinn-Phong Shading model
-    Vector3 illuminate(int index, Vector3 P, Vector3 N, Vector3 O, float u, float v){
+    Vector3 illuminate(std::shared_ptr<Material> mat, Vector3 P, Vector3 N, Vector3 O, float u, float v){
         // colour of point to be returned
         Vector3 colour = Vector3(0,0,0);
 
-        Material mat = world.objects[index]->mat;
         Vector3 V = Vector3::normalize(O-P);
-        Vector3 K_d = mat.K_d;
+        Vector3 K_d = mat->K_d;
 
         // if object has a diffuse texture sample it
-        if (world.objects[index]->K_Atex->implemented){
-            K_d = world.objects[index]->K_Atex->get_colour(u, v);
+        if (mat->K_Dtex->implemented){
+            K_d = mat->K_Dtex->get_colour(u, v);
         }
-        Vector3 K_s = mat.K_s;
+        Vector3 K_s = mat->K_s;
         Vector3 I_a = world.ambientColour;
-        int alpha = mat.N_s;
+        int alpha = mat->N_s;
 
         // ambient lighting
         colour += K_d * I_a;

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include "Vector.h"
+#include <vector>
 
 
 // byte headers for QOI file
@@ -129,7 +130,6 @@ struct QOIReader{
         }
         if (header != "qoif"){
             std::cerr << "Invalid QOI file" << std::endl;
-            return;
         }
         // read in the magic numbers and headers
         width = read32();

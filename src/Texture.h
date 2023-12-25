@@ -26,6 +26,10 @@ struct ImageTexture : public Texture{
     ImageTexture(std::string filename){
         implemented = true;
         std::ifstream input(filename, std::ios::in|std::ios::binary);
+        if(!input.is_open()){
+            std::cerr << "Could not open file " << filename << std::endl;
+            throw std::runtime_error("Could not open file");
+        }
         QOIReader qoi = QOIReader(input);
         width = qoi.width;
         height = qoi.height;

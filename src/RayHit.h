@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Vector.h"
+#include "Material.h"
 
 
 struct RayHit{
@@ -8,6 +9,7 @@ struct RayHit{
     Vector3 point;
     Vector3 normal;
     int index = -1;
+    std::shared_ptr<Material> mat;
     // object u, v coordinates
     float u;
     float v;
@@ -16,5 +18,5 @@ struct RayHit{
     float hu;
     float hv;
 
-    RayHit(){distance = 1e8;}
+    RayHit(){distance = FINF;}
 };

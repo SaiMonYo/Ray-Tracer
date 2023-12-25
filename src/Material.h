@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vector.h"
+#include "texture.h"
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -15,6 +15,7 @@ struct Material{
     float N_s = 1;
     float N_i = 1;
     float d = 1;
+    std::shared_ptr<Texture> K_Dtex = std::make_shared<DefaultTexture>();
 };
 
 

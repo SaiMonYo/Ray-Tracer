@@ -26,11 +26,26 @@ struct TriangleMesh: public Observable{
     std::vector<Vector3> vertices;
     std::vector<Vector3> normals;
     std::vector<Vector3> texcoords;
-    std::vector<Vector3> faceNormals;
     std::vector<std::vector<int>> faces;
     Mat4 object_matrix;
     Vector3 boundingBox[2];
     std::shared_ptr<Observable> tree;
+
+    TriangleMesh(){
+        object_matrix = Mat4();
+    }
+
+    // TriangleMesh(TriangleMesh& mesh){
+    //     vertices = mesh.vertices;
+    //     normals = mesh.normals;
+    //     texcoords = mesh.texcoords;
+    //     faces = mesh.faces;
+    //     object_matrix = mesh.object_matrix;
+    //     mat = mesh.mat;
+    //     boundingBox[0] = mesh.boundingBox[0];
+    //     boundingBox[1] = mesh.boundingBox[1];
+    //     tree = mesh.tree;
+    // }
 
     TriangleMesh(const std::string& filename, Material material_){
         std::ifstream file(filename);
@@ -75,10 +90,6 @@ struct TriangleMesh: public Observable{
         if (normals.size() == 0){
             calculate_normals();
         }
-        std::cout << "vertices: " << vertices.size() << std::endl;
-        std::cout << "normals: " << normals.size() << std::endl;
-        std::cout << "texcoords: " << texcoords.size() << std::endl;
-        std::cout << "faces: " << faces.size() << std::endl;
         file.close();
         // calculate normals if they are not given
         recalc_bounding_box();
@@ -174,6 +185,10 @@ struct TriangleMesh: public Observable{
             vmax = Vector3::max(vmax, v);
             vmin = Vector3::min(vmin, v);
         }
+        std::cout << "vertices: " << vertices.size() << std::endl;
+        std::cout << "normals: " << normals.size() << std::endl;
+        std::cout << "texcoords: " << texcoords.size() << std::endl;
+        std::cout << "faces: " << faces.size() << std::endl;
         std::cout << "vmin: " << vmin << std::endl;
         std::cout << "vmax: " << vmax << std::endl;
         boundingBox[0] = vmin;
@@ -244,6 +259,7 @@ struct TriangleMesh: public Observable{
         // else{
             inter.normal = Vector3::normalize(normals[face[2] - 1] * (1 - inter.hu - inter.hv) + normals[face[5] - 1] * inter.hu + normals[face[8] - 1] * inter.hv);
         //}
+        inter.mat = std::make_shared<Material>(mat);
         Vector3 uv = texcoords[face[1] - 1] * (1 - inter.hu - inter.hv) + texcoords[face[4] - 1] * inter.hu + texcoords[face[7] - 1] * inter.hv;
         inter.u = uv.x;
         inter.v = uv.y;
