@@ -15,7 +15,7 @@ struct Ray{
         inv_direction = Vector3::invert(D);
     }
 
-    Vector3 at(float t){
+    Vector3 at(float t) const{
         return origin + t * direction;
     }
 };

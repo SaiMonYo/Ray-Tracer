@@ -243,7 +243,7 @@ struct BVH: public Observable{
         return hit;
     }
 #else
-    bool intersect(Ray& ray, RayHit& inter){
+    bool intersect(const Ray& ray, RayHit& inter){
         if (AABBIntersection(nodes[root_index].aabb, ray) == FINF){
             return false;
         }

@@ -6,6 +6,7 @@
 #include "Light.h"
 #include "RayHit.h"
 #include "Camera.h"
+#include "SkySphere.h"
 
 
 
@@ -27,6 +28,7 @@ struct Scene{
     // keeps track of objects and lights
     std::vector<std::shared_ptr<Observable>> objects;
     std::vector<std::shared_ptr<Light>> lights;
+    std::shared_ptr<SkySphere> sky = nullptr;
     // only one ambient colour per scene
     Vector3 ambientColour;
     Camera cam;
@@ -43,16 +45,10 @@ struct Scene{
         cam.set_screensize(width, height);
     }
 
-    RayHit closest_intersection(Ray ray){
-        RayHit intersection;
-
+    void closest_intersection(RayHit& intersection, const Ray ray){
         // go through each object and see if it intersects
         for(int i = 0; i < objects.size(); i++){
-            std::shared_ptr<Observable> obj = objects[i];
-            if(obj->intersect(ray, intersection)){
-                intersection.index=i;
-            }
+            objects[i]->intersect(ray, intersection);
         }
-        return intersection;
     }
 };

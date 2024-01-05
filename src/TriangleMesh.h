@@ -243,7 +243,7 @@ struct TriangleMesh: public Observable{
         faces.clear();
     }
 
-    bool intersect(Ray& ray, RayHit& inter){
+    bool intersect(const Ray& ray, RayHit& inter){
         bool hit = tree->intersect(ray, inter);
         // check if we had a intersection of a triangle
         if (!hit){

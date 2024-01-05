@@ -14,6 +14,7 @@ struct Renderer{
     int max_bounces = 2;
     int shadow_rays = 10;
     int spp = 5;
+    std::shared_ptr<Observable> previous_object = nullptr;
 
     Renderer(QOIWriter* output, int w, int h, Scene s){
         out = output;
@@ -25,10 +26,13 @@ struct Renderer{
 
     // trace ray through scene and find information of intersection
     Vector3 trace(Ray& ray){
-        RayHit closest = world.closest_intersection(ray);
+        RayHit closest;
+        world.closest_intersection(closest, ray);
 
-        int index = closest.index;
         if (closest.distance == FINF){
+            if (world.sky != nullptr){
+                return world.sky->get_colour(ray.direction);
+            }
             return Vector3(0);
         }
 
@@ -47,7 +51,7 @@ struct Renderer{
         Vector3 K_d = mat->K_d;
 
         // if object has a diffuse texture sample it
-        if (mat->K_Dtex->implemented){
+        if (mat->K_Dtex != nullptr){
             K_d = mat->K_Dtex->get_colour(u, v);
         }
         Vector3 K_s = mat->K_s;

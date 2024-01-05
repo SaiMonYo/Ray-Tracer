@@ -30,7 +30,7 @@ struct Triangle: public Observable{
     }
 
     // moller trumbore algorithm
-    inline bool intersect(Ray& ray, RayHit& inter){
+    inline bool intersect(const Ray& ray, RayHit& inter){
         triangle_count++;
         Vector3 v0 = vertices[0];
         Vector3 v1 = vertices[1];

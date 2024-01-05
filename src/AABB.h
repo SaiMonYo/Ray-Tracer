@@ -60,12 +60,12 @@ struct AABB{
 	}
 };
 
-/*
+
 inline float AABBIntersection(const AABB& aabb, const Ray& ray){
     AABBIntersectionCount++;
 	Vector3 min = aabb.min;
 	Vector3 max = aabb.max;
-    // ray AABB intersection using Nvidia's ray slab intersection algorithm
+    // ray AABB intersection using ray slab intersection algorithm
     Vector3 f = (min - ray.origin) * ray.inv_direction;
     Vector3 n = (max - ray.origin) * ray.inv_direction;
     Vector3 tmin = Vector3::min(f, n);
@@ -74,11 +74,11 @@ inline float AABBIntersection(const AABB& aabb, const Ray& ray){
     float t1 = Vector3::min_component(tmax);
     float t0 = Vector3::max_component(tmin);
 
-    return (t1 >= t0) ? (t0 != FINF ? t0 : t1) : FINF;
+    return (t1 >= t0) ? (t0 > 0.f ? t0 : t1) : FINF;
 }
-*/
 
 
+/*
 inline float AABBIntersection(const AABB& aabb, const Ray& ray){
 	AABBIntersectionCount++;
 	Vector3 bmin = aabb.min;
@@ -91,6 +91,7 @@ inline float AABBIntersection(const AABB& aabb, const Ray& ray){
     tmin = fmax( tmin, fmin( tz1, tz2 ) ), tmax = fmin( tmax, fmax( tz1, tz2 ) );
     if (tmax >= tmin && tmax > 0) return tmin; else return 1e30f;
 }
+*/
 
 /*
 inline bool AABBIntersection(const Vector3& center, const Vector3& e, Triangle& tri){

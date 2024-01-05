@@ -8,7 +8,7 @@ void parse_face(std::vector<int>& face, std::string line);
 int face_type(std::string line);
 void load_mtllib(std::string filename, std::map<std::string, Material>& materials);
 
-BVH load_obj(const std::string& filename, Material mat){
+BVH load_obj(const std::string& filename){
     std::vector<TriangleMesh> meshes;
     std::vector<Vector3> vertices;
     std::vector<Vector3> normals;
@@ -100,22 +100,22 @@ BVH load_obj(const std::string& filename, Material mat){
         for (auto face: mesh.faces){
             std::vector<int> new_face;
             // maps
-            std::vector<int> vmap(vertices.size(), -1);
-            std::vector<int> vtmap(texcoords.size(), -1);
-            std::vector<int> vnmap(normals.size(), -1);
+            std::map<int, int> vmap;
+            std::map<int, int> vtmap;
+            std::map<int, int> vnmap;
             for (int i = 0; i < face.size(); i += 3){
                 int v = face[i];
                 int vt = face[i + 1];
                 int vn = face[i + 2];
-                if (vmap[v-1] == -1){
+                if (vmap.find(v-1) == vmap.end()){
                     mesh.vertices.push_back(vertices[v-1]);
                     vmap[v-1] = mesh.vertices.size();
                 }
-                if (vtmap[vt-1] == -1){
+                if (vtmap.find(vt-1) == vtmap.end()){
                     mesh.texcoords.push_back(texcoords[vt-1]);
                     vtmap[vt-1] = mesh.texcoords.size();
                 }
-                if (vnmap[vn-1] == -1){
+                if (vnmap.find(vn-1) == vnmap.end()){
                     mesh.normals.push_back(normals[vn-1]);
                     vnmap[vn-1] = mesh.normals.size();
                 }

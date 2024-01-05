@@ -8,6 +8,7 @@
 images/result.png
 images/test
 compression/__pycache__/
+SkyTextures/
 objs/
 test.py
 t.py

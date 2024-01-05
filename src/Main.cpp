@@ -1,6 +1,5 @@
 #include <iostream>
 #include "Scene.h"
-#include "Sphere.h"
 #include "Plane.h"
 #include "Renderer.h"
 #include "SphericalLight.h"
@@ -11,70 +10,6 @@ std::string DEFAULT_OUTPUT = "images/result.qoi";
 int DEFAULT_WIDTH = 1920;
 int DEFAULT_HEIGHT = 1080;
 
-int start(){
-    std::ofstream output(DEFAULT_OUTPUT, std::ios::out|std::ios::binary);
-    QOIWriter qoi = QOIWriter(output, DEFAULT_WIDTH, DEFAULT_HEIGHT);
-
-    Scene world = Scene();
-    world.add_object(std::make_shared<Sphere>(Vector3(-0.95, 3.63261, -0.21884), 0.35, "#FF1D25"));
-    world.add_object(std::make_shared<Sphere>(Vector3(-0.4, 4.33013, 0.5), 0.7, "#0071BC"));
-    world.add_object(std::make_shared<Sphere>(Vector3(0.72734, 3.19986, -0.35322), 0.45, "#3AA010"));
-    world.add_light(std::make_shared<SphericalLight>(Vector3(2,4.5,2), Vector3(1), 80, 10));
-    world.add_light(std::make_shared<SphericalLight>(Vector3(-2,1,2.5), Vector3::to_colour("#AAAAFF"), 80, 10));
-
-    Renderer ren = Renderer(&qoi, DEFAULT_WIDTH, DEFAULT_HEIGHT, world);
-    ren.render();
-
-    output.close();
-    return 1;
-}
-
-void test(){
-    std::ofstream output(DEFAULT_OUTPUT, std::ios::out|std::ios::binary);
-    QOIWriter qoi = QOIWriter(output, DEFAULT_WIDTH, DEFAULT_HEIGHT);
-
-    Scene world = Scene();
-    world.add_object(std::make_shared<Sphere>(Vector3(0.55, 3.5, -0.16), 0.5, "#0030BC"));
-    world.add_object(std::make_shared<Sphere>(Vector3(-0.55, 5, 0), 0.9, "#FF1122"));
-    world.add_light(std::make_shared<SphericalLight>(Vector3(1,2,3), Vector3::to_colour("#B3DDFF"), 80, 10));
-    world.add_light(std::make_shared<SphericalLight>(Vector3(-5,4,1), Vector3::to_colour("#FFB0B2"), 80, 10));
-    
-    world.ambientColour = Vector3::to_colour("#FFFFFF") * 0.05;
-
-    Renderer ren = Renderer(&qoi, DEFAULT_WIDTH, DEFAULT_HEIGHT, world);
-    ren.render();
-
-    output.close();
-}
-
-void wd40(){
-    std::ofstream output(DEFAULT_OUTPUT, std::ios::out|std::ios::binary);
-    QOIWriter qoi = QOIWriter(output, DEFAULT_WIDTH, DEFAULT_HEIGHT);
-
-    Scene world = Scene();
-
-    Material lube_mat = parse_material("objs/wd40/lubricant_spray_8k.mtl");
-    std::cout << lube_mat.K_d << std::endl;
-    lube_mat.K_a = Vector3(1);
-    std::shared_ptr<TriangleMesh> lube = std::make_shared<TriangleMesh>("objs/wd40/lubricant_spray_8k.obj", lube_mat);
-    // lube->rotate(0, -M_PI_2, 0);
-    // lube->rescale(10);
-    // lube->translate(Vector3(0, 4, 0));
-    // lube->recalcOctree();
-    lube->mat.K_Dtex = std::make_shared<ImageTexture>("objs/wd40/textures/lubricant_spray_diff_8k.qoi");
-
-    world.add_object(lube);
-
-    world.ambientColour = Vector3::to_colour("#FFFFFF") * 0.3;
-    world.add_light(std::make_shared<SphericalLight>(Vector3(4,5,6), Vector3::to_colour("#FFFFFF"), 500, 0));
-
-    Renderer ren = Renderer(&qoi, DEFAULT_WIDTH, DEFAULT_HEIGHT, world);
-    ren.render();
-    std::cout << triangle_count << std::endl;
-    std::cout << AABBIntersectionCount << std::endl;
-
-    output.close();
-}
 
 void bust(){
     std::ofstream output(DEFAULT_OUTPUT, std::ios::out|std::ios::binary);
@@ -111,11 +46,7 @@ void jinx(){
 
     Scene world = Scene();
 
-    Material lube_mat = parse_material("objs/wd40/lubricant_spray_8k.mtl");
-    std::cout << lube_mat.K_d << std::endl;
-    lube_mat.K_a = Vector3(1);
-
-    std::shared_ptr<BVH> bvh = std::make_shared<BVH>(load_obj("objs/Jinx/jinx.obj", lube_mat));
+    std::shared_ptr<BVH> bvh = std::make_shared<BVH>(load_obj("objs/Jinx/jinx.obj"));
     world.add_object(bvh);
 
     world.ambientColour = Vector3::to_colour("#FFFFFF") * 0.35;
@@ -131,12 +62,56 @@ void jinx(){
     output.close();
 }
 
+void apple(){
+    std::ofstream output(DEFAULT_OUTPUT, std::ios::out|std::ios::binary);
+    QOIWriter qoi = QOIWriter(output, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+
+    Scene world = Scene();
+
+    SkySphere sky = SkySphere(std::make_shared<ImageTexture>("SkyTextures/peppermint_powerplant_4k.qoi"));
+    world.sky = std::make_shared<SkySphere>(sky);
+
+    std::shared_ptr<BVH> bvh = std::make_shared<BVH>(load_obj("objs/Apple/apple.obj"));
+    world.add_object(bvh);
+
+    world.ambientColour = Vector3::to_colour("#FFFFFF") * 0.35;
+    world.add_light(std::make_shared<SphericalLight>(Vector3(5,5,5), Vector3::to_colour("#FFFFFF"), 300, 0));
+
+    world.cam.setup(Vector3(0, 0.4, 0), Vector3(0, 0, 0));
+
+    Renderer ren = Renderer(&qoi, DEFAULT_WIDTH, DEFAULT_HEIGHT, world);
+    ren.render();
+    std::cout << triangle_count << std::endl;
+    std::cout << AABBIntersectionCount << std::endl;
+
+    output.close();
+}
+
+void cornell(){
+    std::ofstream output(DEFAULT_OUTPUT, std::ios::out|std::ios::binary);
+    QOIWriter qoi = QOIWriter(output, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+
+    Scene world = Scene();
+
+    std::shared_ptr<BVH> bvh = std::make_shared<BVH>(load_obj("objs/cornell/cornell-box.obj"));
+    world.add_object(bvh);
+
+    world.ambientColour = Vector3::to_colour("#FFFFFF") * 0.5;
+    world.cam.setup(Vector3(0, 5, 10), Vector3(0, -5, 0));
+
+    Renderer ren = Renderer(&qoi, DEFAULT_WIDTH, DEFAULT_HEIGHT, world);
+    ren.render();
+    std::cout << triangle_count << std::endl;
+    std::cout << AABBIntersectionCount << std::endl;
+
+    output.close();
+}
+
 
 
 int main(){
-    //test();
-    //start();
-    //wd40();
     //bust();
-    jinx();
+    //jinx();
+    //jinx();
+    cornell();
 }

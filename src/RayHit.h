@@ -9,7 +9,7 @@ struct RayHit{
     Vector3 point;
     Vector3 normal;
     int index = -1;
-    std::shared_ptr<Material> mat;
+    std::shared_ptr<Material> mat = nullptr;
     // object u, v coordinates
     float u;
     float v;
